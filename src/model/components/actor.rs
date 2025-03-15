@@ -6,3 +6,6 @@ use crate::model::components::{Description, Position};
 #[reflect(Component)]
 #[require(Description, Position)]
 pub struct Player;
+
+#[derive(Component, Debug)]
+pub struct Enemy;

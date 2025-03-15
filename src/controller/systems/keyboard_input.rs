@@ -1,79 +1,71 @@
-use bevy::prelude::*;
-// use once_cell::sync::Lazy;
+use bevy::{prelude::*, utils::HashMap};
+use once_cell::sync::Lazy;
 
-use crate::model::components::*;
+use crate::model::{
+    components::{Action, MoveDirection, Player, TurnActor, WaitingForInput},
+    resources::TurnQueue,
+};
 
-// static ACTION_KEYS: Lazy<HashMap<PlayerAction, Vec<KeyCode>>> = Lazy::new(|| {
-//     HashMap::from([
-//         (
-//             PlayerAction::Move(MoveDirection::North),
-//             vec![KeyCode::KeyW, KeyCode::ArrowUp],
-//         ),
-//         (
-//             PlayerAction::Move(MoveDirection::South),
-//             vec![KeyCode::KeyS, KeyCode::ArrowDown],
-//         ),
-//         (
-//             PlayerAction::Move(MoveDirection::West),
-//             vec![KeyCode::KeyA, KeyCode::ArrowLeft],
-//         ),
-//         (
-//             PlayerAction::Move(MoveDirection::East),
-//             vec![KeyCode::KeyD, KeyCode::ArrowRight],
-//         ),
-//         (PlayerAction::Wait, vec![KeyCode::Space, KeyCode::Period]),
-//         (
-//             PlayerAction::PickupItem,
-//             vec![KeyCode::KeyG, KeyCode::Comma],
-//         ),
-//     ])
-// });
+/// Static mapping of input actions to their corresponding keyboard keys
+static ACTION_KEYS: Lazy<HashMap<Action, Vec<KeyCode>>> = Lazy::new(|| {
+    HashMap::from([
+        (
+            Action::Move(MoveDirection::North),
+            vec![KeyCode::KeyW, KeyCode::ArrowUp],
+        ),
+        (
+            Action::Move(MoveDirection::South),
+            vec![KeyCode::KeyS, KeyCode::ArrowDown],
+        ),
+        (
+            Action::Move(MoveDirection::West),
+            vec![KeyCode::KeyA, KeyCode::ArrowLeft],
+        ),
+        (
+            Action::Move(MoveDirection::East),
+            vec![KeyCode::KeyD, KeyCode::ArrowRight],
+        ),
+        (Action::Wait, vec![KeyCode::Space, KeyCode::Period]),
+        (Action::PickupItem, vec![KeyCode::KeyG, KeyCode::Comma]),
+    ])
+});
 
-// pub fn keyboard_input(
-//     mut commands: Commands,
-//     button_input: Res<ButtonInput<KeyCode>>,
-//     player: Single<(Entity, &Position), With<Player>>,
-// ) {
-//     commands.entity(player_entity).queue(TryMove::new(dir));
-// }
-
-// System to detect when it's the player's turn and await input
+/// System that handles player input and converts it into game actions
 pub fn player_input_system(
     mut commands: Commands,
     turn_queue: Res<TurnQueue>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(Entity, &mut TurnActor), (With<AwaitingInput>, With<Player>)>,
+    mut query: Query<(Entity, &mut TurnActor), (With<WaitingForInput>, With<Player>)>,
 ) {
     if let Ok((entity, mut turn_actor)) = query.get_single_mut() {
-        let mut action = None;
+        let mut player_action: Option<Action> = None;
 
-        // Handle movement input
-        if keyboard_input.just_pressed(KeyCode::KeyW) {
-            action = Some(Action::Move(IVec2::new(0, 1)));
-        } else if keyboard_input.just_pressed(KeyCode::KeyS) {
-            action = Some(Action::Move(IVec2::new(0, -1)));
-        } else if keyboard_input.just_pressed(KeyCode::KeyA) {
-            action = Some(Action::Move(IVec2::new(-1, 0)));
-        } else if keyboard_input.just_pressed(KeyCode::KeyD) {
-            action = Some(Action::Move(IVec2::new(1, 0)));
+        // Check predefined action keys
+        for (action, keys) in ACTION_KEYS.iter() {
+            if keys.iter().any(|key| keyboard_input.just_pressed(*key)) {
+                player_action = Some(*action);
+                break;
+            }
         }
 
-        if let Some(act) = action {
-            log::info!("Player action: {:?}", act);
+        if let Some(input_action) = player_action {
+            log::info!("Player action: {:?}", input_action);
 
             // Remove awaiting input
-            commands.entity(entity).remove::<AwaitingInput>();
+            commands.entity(entity).remove::<WaitingForInput>();
 
-            // Schedule next turn based on action type (simplified)
-            let time_cost = match act {
+            // Schedule next turn based on action type
+            let time_cost = match input_action {
                 Action::Move(_) => turn_actor.speed,
                 Action::Wait => turn_actor.speed / 2,
                 _ => turn_actor.speed,
             };
 
-            // Add action
-            commands.entity(entity).insert(act);
+            // Update turn actor timing
             turn_actor.next_turn_time = turn_queue.current_time + time_cost as u64;
+
+            // Add action as a component
+            commands.entity(entity).insert(input_action);
         }
     }
 }

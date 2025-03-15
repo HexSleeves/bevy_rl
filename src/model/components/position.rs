@@ -2,6 +2,42 @@ use std::ops::{Add, AddAssign};
 
 use bevy::prelude::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum MoveDirection {
+    North,
+    South,
+    East,
+    West,
+}
+
+impl MoveDirection {
+    pub fn delta(&self) -> (i32, i32) {
+        match self {
+            MoveDirection::North => (0, 1),
+            MoveDirection::South => (0, -1),
+            MoveDirection::East => (1, 0),
+            MoveDirection::West => (-1, 0),
+        }
+    }
+}
+
+impl Add<Position> for MoveDirection {
+    type Output = Position;
+
+    fn add(self, rhs: Position) -> Self::Output {
+        let (dx, dy) = self.delta();
+        Position(IVec2::new(rhs.0.x + dx, rhs.0.y + dy))
+    }
+}
+
+impl Add<MoveDirection> for Position {
+    type Output = Position;
+
+    fn add(self, rhs: MoveDirection) -> Self::Output {
+        rhs + self
+    }
+}
+
 #[derive(Component, Reflect, Default, Debug, Clone, Copy, PartialEq, Eq, Hash, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct Position(pub IVec2);

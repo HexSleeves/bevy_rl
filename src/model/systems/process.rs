@@ -1,11 +1,12 @@
 use bevy::prelude::*;
 
-use crate::model::components::*;
+use crate::model::components::{Action, Enemy, Player, Position, TurnActor, WaitingForInput};
+use crate::model::resources::TurnQueue;
 
 pub fn process_turns(
     mut commands: Commands,
     mut turn_queue: ResMut<TurnQueue>,
-    awaiting_input: Query<Entity, With<AwaitingInput>>,
+    awaiting_input: Query<Entity, With<WaitingForInput>>,
     mut turn_actors: Query<(Entity, &mut TurnActor, Option<&Player>, Option<&Enemy>)>,
 ) {
     // Don't process turns if player is awaiting input or system is paused
@@ -18,7 +19,6 @@ pub fn process_turns(
     let mut earliest_time = u64::MAX;
 
     for (entity, turn_actor, _, _) in turn_actors.iter() {
-        log::info!("processing turn_actor: {:?}", turn_actor);
         if turn_actor.next_turn_time < earliest_time {
             earliest_time = turn_actor.next_turn_time;
             next_actor = Some(entity);
@@ -33,19 +33,15 @@ pub fn process_turns(
         // Check if player or enemy
         let (_, mut turn_actor, player, enemy) = turn_actors.get_mut(entity).unwrap();
 
-        log::info!("next_actor: {:?} => {:?}", entity, turn_actor);
-
         if player.is_some() {
-            log::info!("player turn");
             // Handle player turn - await input
-            commands.entity(entity).insert(AwaitingInput);
+            commands.entity(entity).insert(WaitingForInput);
         } else if enemy.is_some() {
-            log::info!("enemy turn");
             // Handle enemy turn - AI decides action
             // For example, move towards player
-            commands
-                .entity(entity)
-                .insert(Action::Move(IVec2::new(0, 1)));
+            // commands
+            //     .entity(entity)
+            //     .insert(Action::Move(IVec2::new(0, 1)));
 
             // Schedule next turn
             turn_actor.next_turn_time = turn_queue.current_time + turn_actor.speed as u64;
@@ -64,29 +60,25 @@ pub fn execute_actions(
     // Other queries for game state
 ) {
     for (entity, action) in &mut query {
-        log::info!("Executing action: {:?}", action);
-
         match action {
-            Action::Move(dir) => {
+            Action::Move(direction) => {
                 if let Ok(mut position) = position_query.get_mut(entity) {
-                    // Check for collision (you'd expand this)
-                    let new_pos = position.0 + *dir;
-
                     // Update position if valid
-                    *position = Position(new_pos);
+                    *position = *position + *direction;
                 }
             }
             Action::Wait => {
                 // Do nothing
             }
-            Action::Attack(target) => {
+            Action::Attack(_target) => {
                 // Handle attack logic
+            }
+            _ => {
+                // Handle other actions
             }
         }
 
         // Remove the action once processed
         commands.entity(entity).remove::<Action>();
-        log::info!("removed action: {:?} from entity: {:?}", action, entity);
-        log::info!("");
     }
 }

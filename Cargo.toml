@@ -64,6 +64,9 @@ bevy = { version = "0.15", default-features = false, features = [
   "webgl2",
   "x11",
 ] }
+
+# A thread-safe, lazy initialization library
+once_cell = { version = "1" }
 # A generic serialization/deserialization framework
 serde = { version = "1", features = ["derive", "rc", "alloc"] }
 
