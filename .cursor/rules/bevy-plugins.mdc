@@ -1,0 +1,167 @@
+---
+description: 
+globs: *.rs
+alwaysApply: false
+---
+# Bevy Plugins and App Structure Best Practices
+
+## Plugin Organization
+
+- Use plugins to organize related functionality
+- Create a plugin for each major subsystem of your game
+- Implement the `Plugin` trait for all plugin structs
+- Use `app.add_plugins()` to add multiple plugins at once
+- Consider using plugin groups for related plugins
+
+```rust
+// Good plugin implementation
+pub struct PlayerPlugin;
+
+impl Plugin for PlayerPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_type::<Player>()
+           .register_type::<Health>()
+           .init_resource::<PlayerSettings>()
+           .add_systems(Startup, spawn_player)
+           .add_systems(
+               Update,
+               (
+                   player_input,
+                   player_movement,
+                   player_animation,
+               )
+           );
+    }
+}
+
+// Using plugin groups
+app.add_plugins((
+    WorldPlugin,
+    PlayerPlugin,
+    EnemyPlugin,
+    CombatPlugin,
+    UIPlugin,
+));
+```
+
+## App Structure
+
+- Follow a modular, domain-driven design
+- Organize code by feature rather than by type
+- Use a consistent directory structure for each module
+- Consider MVC-like separation of concerns:
+  - Model: Game state and logic
+  - View: Rendering and visual effects
+  - Controller: Input handling and game flow
+
+```
+src/
+├── main.rs           # App entry point and configuration
+├── app_settings.rs   # Global settings and configuration
+├── model/            # Game state and logic
+│   ├── components/   # ECS components
+│   ├── resources/    # ECS resources
+│   └── systems/      # Systems that update game state
+├── view/             # Rendering and visual representation
+│   ├── components/   # Visual components
+│   ├── resources/    # Rendering resources
+│   └── systems/      # Systems that handle rendering
+├── controller/       # Input handling and game flow
+│   ├── components/   # Input components
+│   ├── resources/    # Controller resources
+│   └── systems/      # Systems that process input
+└── ui/               # User interface
+    ├── components/   # UI components
+    ├── resources/    # UI resources
+    └── systems/      # Systems that update UI
+```
+
+## Plugin Configuration
+
+- Use configuration structs for plugin settings
+- Implement `Default` for configuration structs
+- Allow overriding default settings
+- Use builder pattern for fluent configuration
+- Register types for reflection when needed
+
+```rust
+// Good plugin configuration
+#[derive(Resource, Clone)]
+pub struct PhysicsSettings {
+    pub gravity: Vec3,
+    pub timestep: f32,
+    pub substeps: usize,
+}
+
+impl Default for PhysicsSettings {
+    fn default() -> Self {
+        Self {
+            gravity: Vec3::new(0.0, -9.81, 0.0),
+            timestep: 1.0 / 60.0,
+            substeps: 1,
+        }
+    }
+}
+
+pub struct PhysicsPlugin {
+    settings: PhysicsSettings,
+}
+
+impl Default for PhysicsPlugin {
+    fn default() -> Self {
+        Self {
+            settings: PhysicsSettings::default(),
+        }
+    }
+}
+
+impl PhysicsPlugin {
+    pub fn with_gravity(mut self, gravity: Vec3) -> Self {
+        self.settings.gravity = gravity;
+        self
+    }
+
+    pub fn with_timestep(mut self, timestep: f32) -> Self {
+        self.settings.timestep = timestep;
+        self
+    }
+}
+
+impl Plugin for PhysicsPlugin {
+    fn build(&self, app: &mut App) {
+        app.insert_resource(self.settings.clone())
+           .add_systems(FixedUpdate, update_physics);
+    }
+}
+
+// Usage
+app.add_plugins(PhysicsPlugin::default().with_gravity(Vec3::new(0.0, -1.62, 0.0)));
+```
+
+## Feature Flags
+
+- Use Cargo features to enable/disable optional functionality
+- Design plugins to be conditionally compiled based on features
+- Use feature flags for development tools and debugging
+- Consider performance implications of debug features
+- Document available features in README
+
+```rust
+// Good feature flag usage
+#[cfg(feature = "debug")]
+app.add_plugins(DebugPlugin);
+
+// Conditional system registration
+#[cfg(feature = "debug")]
+app.add_systems(Update, debug_rendering);
+
+// Feature-gated module
+#[cfg(feature = "networking")]
+mod networking;
+
+#[cfg(feature = "networking")]
+use networking::NetworkingPlugin;
+
+#[cfg(feature = "networking")]
+app.add_plugins(NetworkingPlugin);
+```

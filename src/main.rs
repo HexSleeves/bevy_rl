@@ -1,10 +1,11 @@
+#![feature(trivial_bounds)]
 #![warn(
     clippy::too_many_lines,
     clippy::if_not_else,
     clippy::explicit_iter_loop,
     clippy::explicit_into_iter_loop,
     clippy::exit,
-    clippy::else_if_without_else,
+    // clippy::else_if_without_else,
     clippy::dbg_macro
 )]
 
@@ -13,6 +14,13 @@ use bevy::{
     prelude::*,
     window::{WindowMode, WindowResolution},
 };
+
+use crate::{controller::ControllerPlugin, model::ModelPlugin, ui::UiPlugin, view::ViewPlugin};
+
+pub mod controller;
+pub mod model;
+pub mod ui;
+pub mod view;
 
 mod app_constants;
 pub use self::app_constants::*;
@@ -68,12 +76,12 @@ fn main() {
             .chain(),
     );
 
-    // app.insert_resource(app_settings);
+    app.insert_resource(app_settings);
 
     // #[cfg(feature = "dev")]
     // app.add_plugins(crate::dev::DevPlugin);
 
-    // app.add_plugins((ControllerPlugin, ModelPlugin, UiPlugin, ViewPlugin));
+    app.add_plugins((ControllerPlugin, ModelPlugin, ViewPlugin, UiPlugin));
 
     app.run();
 }

@@ -1,0 +1,215 @@
+---
+description: 
+globs: *.rs
+alwaysApply: false
+---
+# Bevy Events and Messaging Best Practices
+
+## Event Design
+
+- Use events for loose coupling between systems
+- Keep events small and focused on a single purpose
+- Implement `Event` trait for all event structs
+- Use descriptive names that indicate the event's purpose
+- Consider using enums for related events
+
+```rust
+// Good event design
+#[derive(Event)]
+pub struct PlayerDamaged {
+    pub entity: Entity,
+    pub amount: f32,
+    pub source: DamageSource,
+}
+
+#[derive(Event)]
+pub struct PlayerHealed {
+    pub entity: Entity,
+    pub amount: f32,
+}
+
+// Using enums for related events
+#[derive(Event)]
+pub enum PlayerHealthEvent {
+    Damaged {
+        entity: Entity,
+        amount: f32,
+        source: DamageSource,
+    },
+    Healed {
+        entity: Entity,
+        amount: f32,
+    },
+    Died {
+        entity: Entity,
+    },
+}
+```
+
+## Event Registration
+
+- Register events in plugin setup
+- Consider event lifecycle and cleanup
+- Group related event registrations
+- Be mindful of event ordering and dependencies
+- Document event flow and dependencies
+
+```rust
+// Good event registration
+impl Plugin for CombatPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_event::<PlayerDamaged>()
+           .add_event::<PlayerHealed>()
+           .add_event::<EnemyDamaged>()
+           .add_event::<EnemyDefeated>();
+
+        // Systems that handle these events
+        app.add_systems(
+            Update,
+            (
+                handle_player_damage,
+                handle_player_healing,
+                handle_enemy_damage,
+                handle_enemy_defeat,
+            )
+        );
+    }
+}
+```
+
+## Event Sending
+
+- Send events using `EventWriter<T>`
+- Be specific about when events are sent
+- Avoid sending too many events in a single frame
+- Consider batching related events when appropriate
+- Document event triggers and expected handlers
+
+```rust
+// Good event sending
+fn damage_system(
+    mut commands: Commands,
+    mut collision_events: EventReader<CollisionEvent>,
+    mut player_damaged_events: EventWriter<PlayerDamaged>,
+    players: Query<&Health, With<Player>>,
+) {
+    for collision in collision_events.read() {
+        if let CollisionEvent::Started(entity_a, entity_b, _) = collision {
+            // Determine if player was hit
+            if let Ok(health) = players.get(*entity_a) {
+                player_damaged_events.send(PlayerDamaged {
+                    entity: *entity_a,
+                    amount: 10.0,
+                    source: DamageSource::Enemy(*entity_b),
+                });
+            } else if let Ok(health) = players.get(*entity_b) {
+                player_damaged_events.send(PlayerDamaged {
+                    entity: *entity_b,
+                    amount: 10.0,
+                    source: DamageSource::Enemy(*entity_a),
+                });
+            }
+        }
+    }
+}
+```
+
+## Event Handling
+
+- Handle events using `EventReader<T>`
+- Process all events in the reader each frame
+- Keep event handlers focused and simple
+- Consider event ordering and dependencies
+- Use run conditions to control when event handlers run
+
+```rust
+// Good event handling
+fn handle_player_damage(
+    mut player_damaged_events: EventReader<PlayerDamaged>,
+    mut health_query: Query<&mut Health>,
+    mut death_events: EventWriter<PlayerDied>,
+) {
+    for event in player_damaged_events.read() {
+        if let Ok(mut health) = health_query.get_mut(event.entity) {
+            health.current -= event.amount;
+
+            if health.current <= 0.0 {
+                death_events.send(PlayerDied {
+                    entity: event.entity,
+                });
+            }
+        }
+    }
+}
+```
+
+## Event Lifecycle
+
+- Events only persist for two update cycles by default
+- Use `app.add_event::<T>().with_update_frequency(N)` to change this
+- Consider using resources for persistent state instead of long-lived events
+- Be aware of event ordering within a frame
+- Clear event readers when appropriate (e.g., on state changes)
+
+```rust
+// Configuring event update frequency
+app.add_event::<RareEvent>().with_update_frequency(5); // Events last 5 frames
+
+// Clearing event readers on state change
+fn clear_events_on_pause(
+    mut next_state: ResMut<NextState<GameState>>,
+    mut collision_events: EventReader<CollisionEvent>,
+    mut damage_events: EventReader<PlayerDamaged>,
+) {
+    if next_state.0 == Some(GameState::Paused) {
+        // Clear all pending events
+        collision_events.clear();
+        damage_events.clear();
+    }
+}
+```
+
+## Command Pattern with Events
+
+- Use events to implement command pattern
+- Decouple command issuers from command handlers
+- Consider using a central command processor
+- Use typed commands for better type safety
+- Document command flow and expected outcomes
+
+```rust
+// Command pattern with events
+#[derive(Event)]
+pub enum GameCommand {
+    SpawnEnemy { position: Vec3, enemy_type: EnemyType },
+    ChangeLevel { level_id: String },
+    GivePlayerItem { item_id: String, quantity: u32 },
+    SaveGame,
+    LoadGame { save_slot: usize },
+}
+
+// Command handler
+fn process_game_commands(
+    mut commands: Commands,
+    mut game_commands: EventReader<GameCommand>,
+    mut next_level: ResMut<NextState<GameState>>,
+    asset_server: Res<AssetServer>,
+    mut player_inventory: ResMut<PlayerInventory>,
+) {
+    for command in game_commands.read() {
+        match command {
+            GameCommand::SpawnEnemy { position, enemy_type } => {
+                spawn_enemy(&mut commands, *position, *enemy_type, &asset_server);
+            }
+            GameCommand::ChangeLevel { level_id } => {
+                // Handle level change
+            }
+            GameCommand::GivePlayerItem { item_id, quantity } => {
+                player_inventory.add_item(item_id, *quantity);
+            }
+            // Handle other commands...
+        }
+    }
+}
+```
+```

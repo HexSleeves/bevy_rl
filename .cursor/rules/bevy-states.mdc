@@ -1,0 +1,122 @@
+---
+description: 
+globs: *.rs
+alwaysApply: false
+---
+# Bevy States and Scheduling Best Practices
+
+## State Management
+
+- Use Bevy's state system for managing game states
+- Define states as enums with `#[derive(States)]`
+- Include a `#[default]` variant for the initial state
+- Use `in_state` and `on_state_transition` run conditions
+- Consider using multiple state types for orthogonal concerns
+
+```rust
+// Good state definition
+#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
+pub enum GameState {
+    #[default]
+    Loading,
+    MainMenu,
+    Playing,
+    Paused,
+    GameOver,
+}
+
+// Using states in systems
+app.add_systems(Update, update_player.run_if(in_state(GameState::Playing)));
+app.add_systems(OnEnter(GameState::Playing), setup_level);
+app.add_systems(OnExit(GameState::Playing), cleanup_level);
+```
+
+## Scheduling and System Sets
+
+- Use system sets to organize related systems
+- Define system sets as enums with `#[derive(SystemSet)]`
+- Use `.chain()` for explicit ordering between sets
+- Use `.ambiguous_with()` for sets that can run in parallel
+- Use `.before()` and `.after()` for fine-grained ordering
+
+```rust
+// Good system set definition
+#[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum GameSet {
+    Input,
+    Physics,
+    Collision,
+    Animation,
+    Rendering,
+}
+
+// Configuring system sets
+app.configure_sets(
+    Update,
+    (
+        GameSet::Input,
+        GameSet::Physics,
+        GameSet::Collision,
+        GameSet::Animation,
+        GameSet::Rendering,
+    ).chain()
+);
+
+// Adding systems to sets
+app.add_systems(Update, process_input.in_set(GameSet::Input));
+app.add_systems(Update, update_physics.in_set(GameSet::Physics));
+```
+
+## Schedule Organization
+
+- Use the appropriate schedule for each system:
+  - `Startup`: One-time initialization
+  - `Update`: Main game loop
+  - `FixedUpdate`: Physics and time-critical systems
+  - `PostUpdate`: Systems that depend on Update results
+  - `PreUpdate`: Systems that prepare for Update
+- Use custom schedules for specialized timing needs
+- Use run conditions to control when systems execute
+
+```rust
+// Good schedule usage
+app.add_systems(Startup, setup_game);
+app.add_systems(Update, gameplay_systems);
+app.add_systems(FixedUpdate, physics_systems);
+app.add_systems(PostUpdate, cleanup_systems);
+
+// Custom schedule example
+#[derive(Schedule)]
+pub struct AnimationSchedule;
+
+app.init_schedule(AnimationSchedule);
+app.add_systems(AnimationSchedule, update_animations);
+```
+
+## Run Conditions
+
+- Use run conditions to control when systems execute
+- Combine run conditions with logical operators
+- Create custom run conditions for complex logic
+- Use run conditions instead of if statements in systems when possible
+- Consider performance implications of complex run conditions
+
+```rust
+// Good run condition usage
+app.add_systems(
+    Update,
+    update_player
+        .run_if(in_state(GameState::Playing))
+        .run_if(resource_exists::<Player>())
+);
+
+// Custom run condition
+fn is_player_alive(player: Query<&Health, With<Player>>) -> bool {
+    player.iter().any(|health| health.current > 0.0)
+}
+
+app.add_systems(
+    Update,
+    player_movement.run_if(is_player_alive)
+);
+```

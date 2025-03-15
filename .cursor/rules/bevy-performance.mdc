@@ -1,0 +1,263 @@
+---
+description: 
+globs: *.rs
+alwaysApply: false
+---
+# Bevy Performance Optimization Best Practices
+
+## System Optimization
+
+- Keep systems small and focused
+- Use query filters to minimize entity processing
+- Leverage change detection with `Changed<T>`
+- Use `Added<T>` for one-time processing
+- Consider system ordering for optimal execution
+- Mutable resources and components run single-threaded instead of paralell for borrow checking purposes
+
+```rust
+// Optimized system with filters
+fn update_moving_entities(
+    time: Res<Time>,
+    mut query: Query<(&Velocity, &mut Transform), (With<Moving>, Without<Static>)>,
+) {
+    for (velocity, mut transform) in &mut query {
+        transform.translation += velocity.0 * time.delta_seconds();
+    }
+}
+
+// Using change detection
+fn update_animations(
+    time: Res<Time>,
+    mut query: Query<(&mut AnimationState, &AnimationTimer), Changed<AnimationTimer>>,
+) {
+    for (mut state, timer) in &mut query {
+        state.current_frame = (state.current_frame + 1) % state.frame_count;
+    }
+}
+```
+
+## Entity Management
+
+- Batch entity creation and deletion
+- Use entity hierarchies for related entities
+- Consider using archetypes for common entity patterns
+- Avoid excessive entity creation/deletion during gameplay
+- Use despawn_recursive for hierarchies
+
+```rust
+// Batch entity creation
+fn spawn_enemies(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    spawn_points: Query<&Transform, With<EnemySpawnPoint>>,
+) {
+    let enemy_texture = asset_server.load("textures/enemy.png");
+
+    for spawn_point in &spawn_points {
+        commands.spawn((
+            SpriteBundle {
+                texture: enemy_texture.clone(),
+                transform: *spawn_point,
+                ..default()
+            },
+            Enemy { health: 100.0 },
+            Velocity(Vec2::new(0.0, -50.0)),
+        ));
+    }
+}
+
+// Efficient entity cleanup
+fn cleanup_level(
+    mut commands: Commands,
+    entities: Query<Entity, With<LevelEntity>>,
+) {
+    for entity in &entities {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+```
+
+## Memory Management
+
+- Use appropriate data structures for your needs
+- Consider using fixed-size collections when possible
+- Avoid excessive cloning of large data
+- Use references when appropriate
+- Be mindful of temporary allocations in hot paths
+
+```rust
+// Efficient memory usage
+fn update_path_finding(
+    mut query: Query<(&Transform, &mut PathFinder)>,
+    map: Res<GameMap>,
+) {
+    // Reuse allocation
+    let mut path_buffer = Vec::with_capacity(100);
+
+    for (transform, mut path_finder) in &mut query {
+        // Clear instead of creating new
+        path_finder.path.clear();
+
+        // Reuse buffer for calculation
+        path_buffer.clear();
+        calculate_path(&map, transform.translation, path_finder.target, &mut path_buffer);
+
+        // Extend instead of clone
+        path_finder.path.extend_from_slice(&path_buffer);
+    }
+}
+```
+
+## Parallel Execution
+
+- Design systems to run in parallel when possible
+- Use `ParamSet` to avoid conflicts in parallel systems
+- Consider using `Commands` for deferred operations
+- Be aware of system scheduling and dependencies
+- Use explicit system ordering only when necessary
+
+```rust
+// Parallel-friendly systems
+fn update_positions(
+    time: Res<Time>,
+    mut query: Query<(&Velocity, &mut Transform)>,
+) {
+    query.par_iter_mut().for_each(|(velocity, mut transform)| {
+        transform.translation += velocity.0.extend(0.0) * time.delta_seconds();
+    });
+}
+
+// Using ParamSet to avoid conflicts
+fn update_player_and_enemies(
+    time: Res<Time>,
+    mut param_set: ParamSet<(
+        Query<(&Velocity, &mut Transform), With<Player>>,
+        Query<(&Velocity, &mut Transform), With<Enemy>>,
+    )>,
+) {
+    // Update player
+    for (velocity, mut transform) in param_set.p0().iter_mut() {
+        transform.translation += velocity.0.extend(0.0) * time.delta_seconds();
+    }
+
+    // Update enemies
+    for (velocity, mut transform) in param_set.p1().iter_mut() {
+        transform.translation += velocity.0.extend(0.0) * time.delta_seconds();
+    }
+}
+```
+
+## Rendering Performance
+
+- Use sprite batching for similar sprites
+- Implement frustum culling for off-screen entities
+- Consider level-of-detail techniques for complex scenes
+- Use texture atlases for related sprites
+- Profile rendering performance regularly
+
+```rust
+// Efficient sprite rendering
+fn setup_sprite_sheet(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
+    let texture_handle = asset_server.load("textures/character_sheet.png");
+    let texture_atlas = TextureAtlas::from_grid(
+        texture_handle,
+        Vec2::new(32.0, 32.0),
+        8,
+        4,
+        None,
+        None,
+    );
+    let texture_atlas_handle = texture_atlases.add(texture_atlas);
+
+    // Spawn multiple sprites using the same atlas
+    for i in 0..10 {
+        commands.spawn(SpriteSheetBundle {
+            texture_atlas: texture_atlas_handle.clone(),
+            sprite: TextureAtlasSprite::new(i % 32),
+            transform: Transform::from_translation(Vec3::new(i as f32 * 40.0, 0.0, 0.0)),
+            ..default()
+        });
+    }
+}
+```
+
+## Build Configuration
+
+- Use appropriate Cargo profiles for different builds
+- Enable dynamic linking during development
+- Use release mode for performance testing
+- Consider LTO for distribution builds
+- Profile your game to identify bottlenecks
+
+```toml
+# Cargo.toml optimizations
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+
+[features]
+dev = ["bevy/dynamic_linking"]
+```
+
+## Asset Loading
+
+- Load assets asynchronously
+- Implement loading screens for large asset loads
+- Consider asset streaming for large worlds
+- Use asset collections for related assets
+- Implement asset unloading for unused assets
+
+```rust
+// Asynchronous asset loading
+fn load_level_assets(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut loading_state: ResMut<NextState<GameState>>,
+) {
+    // Start loading assets
+    let textures: Vec<HandleUntyped> = asset_server.load_folder("textures/level1").unwrap();
+    let models: Vec<HandleUntyped> = asset_server.load_folder("models/level1").unwrap();
+
+    // Combine all handles
+    let mut handles = Vec::new();
+    handles.extend(textures);
+    handles.extend(models);
+
+    // Create a loading tracker
+    commands.insert_resource(AssetsLoading(handles));
+
+    // Transition to loading state
+    loading_state.set(GameState::Loading);
+}
+
+// Check loading progress
+fn check_asset_loading(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    loading: Res<AssetsLoading>,
+    mut game_state: ResMut<NextState<GameState>>,
+) {
+    use bevy::asset::LoadState;
+
+    // Check if all assets are loaded
+    if loading.0.iter().all(|handle| {
+        matches!(asset_server.get_load_state(handle.id()), LoadState::Loaded)
+    }) {
+        commands.remove_resource::<AssetsLoading>();
+        game_state.set(GameState::Playing);
+    }
+}
+```
+```
