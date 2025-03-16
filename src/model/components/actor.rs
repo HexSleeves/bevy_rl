@@ -8,4 +8,4 @@ use crate::model::components::{Description, Position};
 pub struct Player;
 
 #[derive(Component, Debug)]
-pub struct Enemy;
+pub struct Actor;

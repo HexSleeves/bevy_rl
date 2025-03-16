@@ -11,6 +11,13 @@ pub enum MoveDirection {
 }
 
 impl MoveDirection {
+    pub const ALL_DIRECTIONS: [MoveDirection; 4] = [
+        MoveDirection::North,
+        MoveDirection::South,
+        MoveDirection::East,
+        MoveDirection::West,
+    ];
+
     pub fn delta(&self) -> (i32, i32) {
         match self {
             MoveDirection::North => (0, 1),

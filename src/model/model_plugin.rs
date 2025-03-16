@@ -1,9 +1,8 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::prelude::*;
 
 use crate::model::{
     components::{Description, Player, Position, Renderable, TerrainType},
-    model_constants::ModelConstants,
-    resources::{Map, TurnQueue},
+    resources::{Map, TurnQueue, TurnSystem},
     systems::{spawn_map, spawn_player},
 };
 
@@ -18,11 +17,9 @@ impl Plugin for ModelPlugin {
         app.register_type::<Renderable>();
         app.register_type::<TerrainType>();
 
+        app.init_resource::<TurnSystem>();
         app.init_resource::<TurnQueue>();
-        app.insert_resource(Map {
-            size: (ModelConstants::MAP_WIDTH, ModelConstants::MAP_HEIGHT),
-            tiles: HashMap::new(),
-        });
+        app.init_resource::<Map>();
 
         app.add_systems(Startup, (spawn_map, spawn_player).chain());
         app.add_systems(Update, (process_turns, execute_actions));

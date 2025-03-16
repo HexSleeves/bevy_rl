@@ -5,7 +5,7 @@ use super::MoveDirection;
 // Define components for the turn system
 #[derive(Component, Debug)]
 pub struct TurnActor {
-    pub speed: u32,
+    pub speed: u64,
     pub next_turn_time: u64,
 }
 

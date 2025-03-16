@@ -3,7 +3,7 @@ use once_cell::sync::Lazy;
 
 use crate::model::{
     components::{Action, MoveDirection, Player, TurnActor, WaitingForInput},
-    resources::TurnQueue,
+    resources::TurnSystem,
 };
 
 /// Static mapping of input actions to their corresponding keyboard keys
@@ -33,11 +33,11 @@ static ACTION_KEYS: Lazy<HashMap<Action, Vec<KeyCode>>> = Lazy::new(|| {
 /// System that handles player input and converts it into game actions
 pub fn player_input_system(
     mut commands: Commands,
-    turn_queue: Res<TurnQueue>,
+    mut turn_system: ResMut<TurnSystem>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(Entity, &mut TurnActor), (With<WaitingForInput>, With<Player>)>,
+    query: Query<(Entity, &TurnActor), (With<WaitingForInput>, With<Player>)>,
 ) {
-    if let Ok((entity, mut turn_actor)) = query.get_single_mut() {
+    if let Ok((entity, turn_actor)) = query.get_single() {
         let mut player_action: Option<Action> = None;
 
         // Check predefined action keys
@@ -61,8 +61,9 @@ pub fn player_input_system(
                 _ => turn_actor.speed,
             };
 
-            // Update turn actor timing
-            turn_actor.next_turn_time = turn_queue.current_time + time_cost as u64;
+            // Calculate next turn time
+            let next_turn_time = turn_actor.next_turn_time + time_cost;
+            turn_system.schedule_turn(entity, next_turn_time);
 
             // Add action as a component
             commands.entity(entity).insert(input_action);

@@ -2,12 +2,17 @@ use bevy::prelude::*;
 use rand::Rng;
 
 use crate::model::{
-    components::{Enemy, Player, Position, Renderable, TerrainType, TurnActor},
-    resources::Map,
+    components::{Actor, Player, Position, Renderable, TerrainType, TurnActor},
+    resources::{Map, TurnSystem},
     utils::spawn_ascii_entity,
 };
 
-pub fn spawn_player(mut commands: Commands, map: Res<Map>, asset_server: Res<AssetServer>) {
+pub fn spawn_player(
+    mut commands: Commands,
+    map: Res<Map>,
+    asset_server: Res<AssetServer>,
+    mut turn_system: ResMut<TurnSystem>,
+) {
     // Find a valid floor tile for the player
     let mut valid_positions = Vec::new();
     for (pos, tile_type) in &map.tiles {
@@ -41,7 +46,7 @@ pub fn spawn_player(mut commands: Commands, map: Res<Map>, asset_server: Res<Ass
     ));
 
     // Spawn an enemy
-    let enemy_id = spawn_ascii_entity(
+    let actor_id = spawn_ascii_entity(
         &mut commands,
         &asset_server,
         Position::new(x + 1, y + 1),
@@ -52,11 +57,15 @@ pub fn spawn_player(mut commands: Commands, map: Res<Map>, asset_server: Res<Ass
         1.0,
     );
 
-    commands.entity(enemy_id).insert((
-        Enemy,
+    commands.entity(actor_id).insert((
+        Actor,
         TurnActor {
             speed: 120, // Enemy is slower
             next_turn_time: 0,
         },
     ));
+
+    let current_time = turn_system.current_time();
+    turn_system.schedule_turn(player_id, current_time);
+    turn_system.schedule_turn(actor_id, current_time);
 }
