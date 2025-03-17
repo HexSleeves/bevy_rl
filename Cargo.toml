@@ -32,6 +32,7 @@ strip = true
 dev = ["bevy/dynamic_linking"]
 
 [dependencies]
+brtk = { path = "./brtk" }
 bevy = { version = "0.15", default-features = false, features = [
   "animation",
   "bevy_asset",

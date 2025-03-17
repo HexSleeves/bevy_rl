@@ -1,6 +1,9 @@
 use bevy::{ecs::system::SystemState, prelude::*};
 
-use crate::model::components::{MoveDirection, Position, TerrainType};
+use crate::model::{
+    components::{MoveDirection, Position, TerrainType},
+    resources::CurrentMap,
+};
 
 pub struct TryMove(pub MoveDirection);
 
@@ -13,37 +16,35 @@ impl TryMove {
 impl EntityCommand for TryMove {
     fn apply(self, entity: Entity, world: &mut World) {
         log::info!("Executing TryMove for entity: {}", entity);
+
         let mut state: SystemState<(
-            // ResMut<CurrentMap>,
+            ResMut<CurrentMap>,
             // ResMut<GameLog>,
             Query<&mut Position>,
             Query<&TerrainType>,
         )> = SystemState::new(world);
 
-        // let (mut current_map, mut game_log, mut q_position, q_terrain_type) = state.get_mut(world);
-        // let Ok(mut position) = q_position.get_mut(entity) else {
-        //     return;
-        // };
+        let (current_map, mut q_position, q_terrain_type) = state.get_mut(world);
+        let Ok(mut position) = q_position.get_mut(entity) else {
+            log::error!("Failed to get mut position for entity: {}", entity);
+            return;
+        };
 
-        // let new_position = *position + self.0.coord();
-        // let Some(terrain_entity) = current_map.get_terrain(new_position) else {
-        //     return;
-        // };
+        let new_position = *position + self.0;
+        let Some(terrain_entity) = current_map.get_terrain(new_position) else {
+            log::error!("Failed to get terrain for entity: {}", entity);
+            return;
+        };
 
-        // let Ok(terrain_type) = q_terrain_type.get(terrain_entity) else {
-        //     return;
-        // };
+        let Ok(terrain_type) = q_terrain_type.get(terrain_entity) else {
+            log::error!("Failed to get terrain type for entity: {}", entity);
+            return;
+        };
 
-        // match terrain_type {
-        //     TerrainType::Floor => {
-        //         game_log.add_message(format!("You move {}", self.0));
-        //         current_map.set_actor(*position, None);
-        //         *position = new_position;
-        //         current_map.set_actor(new_position, Some(entity));
-        //     }
-        //     TerrainType::Wall => {
-        //         game_log.add_message("You bump into a wall.");
-        //     }
-        // }
+        if *terrain_type == TerrainType::Floor {
+            *position = new_position;
+        } else {
+            log::info!("Cannot move to {:?}", new_position);
+        }
     }
 }

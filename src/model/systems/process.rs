@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 
 use crate::model::commands::TryMove;
-use crate::model::components::{
-    Action, Actor, MoveDirection, Player, Position, TurnActor, WaitingForInput,
-};
+use crate::model::components::{Action, Actor, MoveDirection, Player, TurnActor, WaitingForInput};
 use crate::model::resources::TurnSystem;
 
 pub fn process_turns(
@@ -22,11 +20,11 @@ pub fn process_turns(
         // Find the actor's data
         if let Ok((entity, turn_actor, player, enemy)) = actor_query.get(entity) {
             if player.is_some() {
-                println!();
                 log::info!("Processing turn for player entity: {}", entity);
 
                 // Player's turn - wait for input
                 commands.entity(entity).insert(WaitingForInput);
+                log::info!("Player's turn - waiting for input");
             } else if enemy.is_some() {
                 log::info!("Processing turn for enemy entity: {}", entity);
 
@@ -61,12 +59,6 @@ pub fn execute_actions(
         match action {
             Action::Move(direction) => {
                 commands.entity(entity).queue(TryMove::new(*direction));
-
-                // Update position if valid
-                // if let Ok(mut position) = position_query.get_mut(entity) {
-                //     // Update actual position (data model)
-                //     *position = *position + *direction;
-                // }
             }
             Action::Wait => {
                 // Do nothing

@@ -1,3 +1,6 @@
+mod current_map;
+pub use self::current_map::*;
+
 mod map;
 pub use self::map::*;
 

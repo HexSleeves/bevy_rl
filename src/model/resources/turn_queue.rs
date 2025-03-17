@@ -28,12 +28,6 @@ impl TurnSystem {
     pub fn schedule_turn(&mut self, entity: Entity, delay: u64) {
         let next_time = self.current_time.wrapping_add(delay);
         self.turn_queue.push(Reverse((next_time, entity)));
-        log::info!(
-            "Current time: {}, Scheduled turn for entity {} at time {}.",
-            self.current_time,
-            entity,
-            next_time
-        );
     }
 
     // Get the next actor in the queue
