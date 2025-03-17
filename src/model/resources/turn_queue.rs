@@ -2,21 +2,6 @@ use std::{cmp::Reverse, collections::BinaryHeap};
 
 use bevy::prelude::*;
 
-#[derive(Resource)]
-pub struct TurnQueue {
-    pub current_time: u64,
-    pub processing: bool,
-}
-
-impl Default for TurnQueue {
-    fn default() -> Self {
-        Self {
-            current_time: 0,
-            processing: true,
-        }
-    }
-}
-
 #[derive(Resource, Default)]
 pub struct TurnSystem {
     current_time: u64,
@@ -24,6 +9,10 @@ pub struct TurnSystem {
 }
 
 impl TurnSystem {
+    pub fn print_queue(&self) {
+        log::info!("Turn queue: {:?}", self.turn_queue);
+    }
+
     // Add actor to the queue with wrapping time calculation
     pub fn schedule_turn(&mut self, entity: Entity, delay: u64) {
         let next_time = self.current_time.wrapping_add(delay);

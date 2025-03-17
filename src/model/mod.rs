@@ -1,6 +1,5 @@
 pub mod commands;
 pub mod components;
-// pub mod maps;
 pub mod resources;
 pub mod systems;
 pub mod utils;

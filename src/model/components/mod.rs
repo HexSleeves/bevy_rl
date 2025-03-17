@@ -4,8 +4,8 @@ pub use self::actor::*;
 mod description;
 pub use self::description::*;
 
-mod turn;
-pub use self::turn::*;
+mod input;
+pub use self::input::*;
 
 mod position;
 pub use self::position::*;
@@ -15,3 +15,6 @@ pub use self::renderable::*;
 
 mod terrain_type;
 pub use self::terrain_type::*;
+
+mod turn;
+pub use self::turn::*;

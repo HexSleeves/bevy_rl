@@ -1,77 +1,110 @@
 use bevy::prelude::*;
 
-use crate::model::commands::TryMove;
-use crate::model::components::{Action, Actor, MoveDirection, Player, TurnActor, WaitingForInput};
-use crate::model::resources::TurnSystem;
+use crate::model::{
+    commands::TryMove,
+    components::{AIControlled, AwaitingInput, MoveDirection, Player, TurnActor},
+    resources::{ActionQueue, ActionType, TurnSystem},
+};
 
 pub fn process_turns(
     mut commands: Commands,
     mut turn_system: ResMut<TurnSystem>,
-    awaiting_input: Query<Entity, With<WaitingForInput>>,
-    actor_query: Query<(Entity, &TurnActor, Option<&Player>, Option<&Actor>)>,
+    mut action_queue: ResMut<ActionQueue>,
+    awaiting_input: Query<Entity, With<AwaitingInput>>,
+    actor_query: Query<(Entity, Option<&Player>, Option<&AIControlled>), With<TurnActor>>,
 ) {
-    // Don't process turns if waiting for input
-    if !awaiting_input.is_empty() {
+    // Don't process new turns if:
+    // 1. Actions are still being processed
+    // 2. Waiting for player input
+    // 3. Waiting for animations
+    if !action_queue.is_empty()
+        || !awaiting_input.is_empty()
+        || action_queue.is_waiting_for_animation()
+    {
         return;
     }
 
-    // Process next turn if available
-    if let Some((entity, _)) = turn_system.get_next_actor() {
-        // Find the actor's data
-        if let Ok((entity, turn_actor, player, enemy)) = actor_query.get(entity) {
+    log::info!("Processing turns");
+    turn_system.print_queue();
+
+    // Process next turn
+    if let Some((entity, _time)) = turn_system.get_next_actor() {
+        if let Ok((entity, player, ai)) = actor_query.get(entity) {
             if player.is_some() {
-                log::info!("Processing turn for player entity: {}", entity);
-
                 // Player's turn - wait for input
-                commands.entity(entity).insert(WaitingForInput);
-                log::info!("Player's turn - waiting for input");
-            } else if enemy.is_some() {
-                log::info!("Processing turn for enemy entity: {}", entity);
-
-                // Enemy turn - perform AI actions
-                // Calculate move or attack...
-
-                // Example: move in random direction
-                // Randomly select one of the MoveDirection values
-                let directions = MoveDirection::ALL_DIRECTIONS;
-                let random_direction = directions[fastrand::usize(..directions.len())];
-
-                commands
-                    .entity(entity)
-                    .insert(Action::Move(random_direction));
-
-                // Schedule next turn using TurnActor's speed
-                turn_system.schedule_turn(entity, turn_actor.speed);
+                commands.entity(entity).insert(AwaitingInput);
+                log::info!("Player's turn");
+            } else if ai.is_some() {
+                // AI's turn - decide action immediately
+                let action = decide_ai_action(entity, &actor_query);
+                action_queue.push(entity, action);
+                log::info!("AI's turn");
             }
         }
     }
 }
 
-pub fn execute_actions(
-    mut commands: Commands,
-    actions: Query<(Entity, &Action)>,
-    // mut position_query: Query<&mut Position>,
-    // Other queries for game state
-) {
-    for (entity, action) in &actions {
-        log::info!("Executing action: {:?} for entity: {}", action, entity);
+// Helper function for AI decision making
+fn decide_ai_action(
+    _entity: Entity,
+    _query: &Query<(Entity, Option<&Player>, Option<&AIControlled>), With<TurnActor>>,
+) -> ActionType {
+    // Simple AI logic - for illustration
+    let random_dir = match fastrand::i32(0..4) {
+        0 => MoveDirection::North,
+        1 => MoveDirection::East,
+        2 => MoveDirection::South,
+        _ => MoveDirection::West,
+    };
 
-        match action {
-            Action::Move(direction) => {
-                commands.entity(entity).queue(TryMove::new(*direction));
-            }
-            Action::Wait => {
-                // Do nothing
-            }
-            Action::Attack(_target) => {
-                // Handle attack logic
-            }
-            _ => {
-                // Handle other actions
+    ActionType::Move(random_dir)
+}
+
+pub fn process_action_queue(
+    mut commands: Commands,
+    mut action_queue: ResMut<ActionQueue>,
+    mut turn_system: ResMut<TurnSystem>,
+    actor_query: Query<(Entity, &TurnActor)>,
+    // collision_query: Query<(Entity, &Position)>,
+) {
+    // Don't process if waiting for animations
+    if action_queue.is_waiting_for_animation() {
+        return;
+    }
+
+    // Make sure all actors have actions queued before processing
+    let actor_count = actor_query.iter().count();
+    if action_queue.is_empty() {
+        // if action_queue.is_empty() || action_queue.len() < actor_count {
+        return;
+    }
+
+    log::info!("Processing action queue");
+    action_queue.print_queue();
+
+    // Process next action
+    while let Some(action) = action_queue.next_action() {
+        log::info!("Processing action: {:?}", action);
+        if let Ok((entity, turn_actor)) = actor_query.get(action.entity) {
+            match action.action_type {
+                ActionType::Move(dir) => {
+                    commands.entity(entity).queue(TryMove::new(dir));
+
+                    // Schedule entity's next turn (only after completing action)
+                    turn_system.schedule_turn(entity, turn_actor.speed);
+                }
+                ActionType::Attack(_target) => {
+                    // Handle attack logic...
+
+                    // Schedule next turn
+                    turn_system.schedule_turn(entity, turn_actor.speed * 2);
+                }
+                // Other action types...
+                _ => {
+                    // Default fallback
+                    turn_system.schedule_turn(entity, turn_actor.speed);
+                }
             }
         }
-
-        // Remove the action once processed
-        commands.entity(entity).remove::<Action>();
     }
 }

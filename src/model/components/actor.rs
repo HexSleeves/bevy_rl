@@ -8,4 +8,8 @@ use crate::model::components::{Description, Position};
 pub struct Player;
 
 #[derive(Component, Debug)]
+#[require(Description, Position)]
 pub struct Actor;
+
+#[derive(Component, Debug)]
+pub struct AIControlled;

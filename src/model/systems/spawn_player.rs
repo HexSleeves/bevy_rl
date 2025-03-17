@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use rand::Rng;
 
 use crate::model::{
-    components::{Actor, Player, Position, Renderable, TerrainType, TurnActor},
+    components::{AIControlled, Actor, Player, Position, Renderable, TerrainType, TurnActor},
     resources::{CurrentMap, TurnSystem},
     utils::spawn_ascii_entity,
     ModelConstants,
@@ -70,6 +70,7 @@ pub fn spawn_player(
 
     commands.entity(actor_id).insert((
         Actor,
+        AIControlled,
         TurnActor {
             speed: 120, // Enemy is slower
             next_turn_time: 0,

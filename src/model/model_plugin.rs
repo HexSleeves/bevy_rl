@@ -2,11 +2,9 @@ use bevy::prelude::*;
 
 use crate::model::{
     components::{Description, Player, Position, Renderable, TerrainType},
-    resources::{CurrentMap, TurnQueue, TurnSystem},
-    systems::{spawn_map, spawn_player},
+    resources::{ActionQueue, CurrentMap, TurnSystem},
+    systems::{process_action_queue, process_turns, spawn_map, spawn_player},
 };
-
-use super::systems::{execute_actions, process_turns};
 
 pub struct ModelPlugin;
 impl Plugin for ModelPlugin {
@@ -18,10 +16,19 @@ impl Plugin for ModelPlugin {
         app.register_type::<TerrainType>();
 
         app.init_resource::<TurnSystem>();
-        app.init_resource::<TurnQueue>();
+        app.init_resource::<ActionQueue>();
+
         app.init_resource::<CurrentMap>();
 
         app.add_systems(Startup, (spawn_map, spawn_player).chain());
-        app.add_systems(Update, (process_turns, execute_actions));
+        app.add_systems(
+            Update,
+            (
+                process_turns,
+                // handle_player_input,
+                process_action_queue,
+            )
+                .chain(),
+        );
     }
 }
