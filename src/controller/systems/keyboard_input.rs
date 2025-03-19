@@ -2,58 +2,56 @@ use bevy::{prelude::*, utils::HashMap};
 use once_cell::sync::Lazy;
 
 use crate::model::{
-    components::{AwaitingInput, MoveDirection},
-    resources::{ActionQueue, ActionType},
+    actions::Walk,
+    components::{AwaitingInput, TurnActor},
+    types::{ActionType, BuildableGameAction, GameActionBuilder, MoveDirection},
 };
+#[macro_export]
+macro_rules! action_keys {
+    ($(($action:expr, [$($key:expr),*])),*) => {
+        Lazy::new(|| {
+            HashMap::from([
+                $(($action, vec![$($key),*])),*
+            ])
+        })
+    }
+}
 
-/// Static mapping of input actions to their corresponding keyboard keys
-static ACTION_KEYS: Lazy<HashMap<ActionType, Vec<KeyCode>>> = Lazy::new(|| {
-    HashMap::from([
-        (
-            ActionType::Move(MoveDirection::North),
-            vec![KeyCode::KeyW, KeyCode::ArrowUp],
-        ),
-        (
-            ActionType::Move(MoveDirection::South),
-            vec![KeyCode::KeyS, KeyCode::ArrowDown],
-        ),
-        (
-            ActionType::Move(MoveDirection::West),
-            vec![KeyCode::KeyA, KeyCode::ArrowLeft],
-        ),
-        (
-            ActionType::Move(MoveDirection::East),
-            vec![KeyCode::KeyD, KeyCode::ArrowRight],
-        ),
-        (ActionType::Wait, vec![KeyCode::Space, KeyCode::Period]),
-    ])
-});
+static ACTION_KEYS: Lazy<HashMap<ActionType, Vec<KeyCode>>> = action_keys![
+    (ActionType::Move(MoveDirection::North), [KeyCode::KeyW, KeyCode::ArrowUp]),
+    (ActionType::Move(MoveDirection::South), [KeyCode::KeyS, KeyCode::ArrowDown]),
+    (ActionType::Move(MoveDirection::West), [KeyCode::KeyA, KeyCode::ArrowLeft]),
+    (ActionType::Move(MoveDirection::East), [KeyCode::KeyD, KeyCode::ArrowRight]),
+    (ActionType::Wait, [KeyCode::Space, KeyCode::Period])
+];
 
 /// System that handles player input and converts it into game actions
 pub fn player_input_system(
     mut commands: Commands,
-    mut action_queue: ResMut<ActionQueue>,
+    // mut action_queue: ResMut<ActionQueueV2>,
     input: Res<ButtonInput<KeyCode>>,
-    query: Query<Entity, With<AwaitingInput>>,
+    q_awaiting_input: Option<Single<(Entity, &mut TurnActor), With<AwaitingInput>>>,
 ) {
-    if let Ok(entity) = query.get_single() {
+    if let Some(a) = q_awaiting_input {
+        let (entity, mut p_actor) = a.into_inner();
         let mut action: Option<ActionType> = None;
 
         for (act, keys) in ACTION_KEYS.iter() {
             if keys.iter().any(|key| input.just_pressed(*key)) {
+                log::info!("Player input: {:?}", act);
                 action = Some(*act);
                 break;
             }
         }
 
         if let Some(act) = &action {
-            // Remove awaiting input
+            if let ActionType::Move(dir) = act {
+                p_actor.add_action(
+                    Walk::builder().with_entity(entity).with_direction((*dir).into()).build(),
+                );
+            }
+
             commands.entity(entity).remove::<AwaitingInput>();
-
-            // Add action to queue
-            action_queue.push(entity, *act);
-
-            log::info!("Player input: {:?}", act);
         }
     }
 }

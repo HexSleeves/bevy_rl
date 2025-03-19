@@ -1,9 +1,8 @@
 use bevy::prelude::*;
-use rand::Rng;
 
 use crate::model::{
-    components::{AIControlled, Actor, Player, Position, Renderable, TerrainType, TurnActor},
-    resources::{CurrentMap, TurnSystem},
+    components::{AITag, PlayerTag, Position, Renderable, TerrainType, TurnActor},
+    resources::{CurrentMap, TurnQueue},
     utils::spawn_ascii_entity,
     ModelConstants,
 };
@@ -12,7 +11,7 @@ pub fn spawn_player(
     mut commands: Commands,
     mut current_map: ResMut<CurrentMap>,
     asset_server: Res<AssetServer>,
-    mut turn_system: ResMut<TurnSystem>,
+    mut turn_system: ResMut<TurnQueue>,
     terrain_query: Query<&TerrainType>,
 ) {
     // Find a valid floor tile for the player
@@ -31,8 +30,8 @@ pub fn spawn_player(
     }
 
     // Choose a random position
-    let mut rng = rand::rng();
-    let (x, y) = valid_positions[rng.random_range(0..valid_positions.len())];
+    let mut rng = fastrand::Rng::new();
+    let (x, y) = valid_positions[rng.usize(0..valid_positions.len())];
 
     let player_position = Position::new(x, y);
     let player_id = spawn_ascii_entity(
@@ -46,16 +45,10 @@ pub fn spawn_player(
         1.0,
     );
 
-    commands.entity(player_id).insert((
-        Player,
-        TurnActor {
-            speed: 100,
-            next_turn_time: 0, // Player goes first
-        },
-    ));
+    commands.entity(player_id).insert((PlayerTag, TurnActor::new(100)));
 
     // Spawn an enemy
-    let (x, y) = valid_positions[rng.random_range(0..valid_positions.len())];
+    let (x, y) = valid_positions[rng.usize(0..valid_positions.len())];
     let actor_position = Position::new(x, y);
     let actor_id = spawn_ascii_entity(
         &mut commands,
@@ -68,18 +61,13 @@ pub fn spawn_player(
         1.0,
     );
 
-    commands.entity(actor_id).insert((
-        Actor,
-        AIControlled,
-        TurnActor {
-            speed: 120, // Enemy is slower
-            next_turn_time: 0,
-        },
-    ));
+    commands.entity(actor_id).insert((AITag, TurnActor::new(120)));
 
+    // Set the player and actor on the map
     current_map.set_actor(player_position, Some(player_id));
     current_map.set_actor(actor_position, Some(actor_id));
 
+    // Schedule the player and actor to take turns
     let current_time = turn_system.current_time();
     turn_system.schedule_turn(player_id, current_time);
     turn_system.schedule_turn(actor_id, current_time);

@@ -5,11 +5,10 @@ use crate::model::components::{Description, Position};
 #[derive(Component, Reflect, Default)]
 #[reflect(Component)]
 #[require(Description, Position)]
-pub struct Player;
+pub struct PlayerTag;
 
 #[derive(Component, Debug)]
-#[require(Description, Position)]
-pub struct Actor;
+pub struct AITag;
 
 #[derive(Component, Debug)]
-pub struct AIControlled;
+pub struct DeadTag;

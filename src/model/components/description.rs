@@ -5,7 +5,5 @@ use bevy::prelude::*;
 pub struct Description(pub String);
 
 impl Description {
-    pub fn new(description: impl ToString) -> Self {
-        Self(description.to_string())
-    }
+    pub fn new(description: impl ToString) -> Self { Self(description.to_string()) }
 }

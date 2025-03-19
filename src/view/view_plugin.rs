@@ -17,9 +17,7 @@ impl Plugin for ViewPlugin {
             PostUpdate,
             (
                 (add_sprite_to_tile),
-                position_to_transform
-                    .in_set(AppSet::Render)
-                    .run_if(not(in_state(RunningState::Paused))),
+                position_to_transform.in_set(AppSet::Render).run_if(not(in_state(RunningState::Paused))),
             ),
         );
     }

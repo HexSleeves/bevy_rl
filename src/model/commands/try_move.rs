@@ -1,16 +1,15 @@
 use bevy::{ecs::system::SystemState, prelude::*};
 
 use crate::model::{
-    components::{MoveDirection, Position, TerrainType},
+    components::{Position, TerrainType},
     resources::CurrentMap,
+    types::MoveDirection,
 };
 
 pub struct TryMove(pub MoveDirection);
 
 impl TryMove {
-    pub fn new(dir: MoveDirection) -> Self {
-        Self(dir)
-    }
+    pub fn new(dir: MoveDirection) -> Self { Self(dir) }
 }
 
 impl EntityCommand for TryMove {

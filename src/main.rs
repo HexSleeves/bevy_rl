@@ -1,4 +1,6 @@
 #![feature(trivial_bounds)]
+#![feature(exact_size_is_empty)]
+#![feature(associated_type_defaults)]
 #![warn(
     clippy::too_many_lines,
     clippy::if_not_else,
@@ -18,6 +20,7 @@ use bevy::{
 use crate::{controller::ControllerPlugin, model::ModelPlugin, ui::UiPlugin, view::ViewPlugin};
 
 pub mod controller;
+pub mod macros;
 pub mod model;
 pub mod ui;
 pub mod view;
@@ -67,13 +70,7 @@ fn main() {
     .init_state::<RunningState>()
     .configure_sets(
         Update,
-        (
-            AppSet::RecordInput,
-            AppSet::Visibility,
-            AppSet::Update,
-            AppSet::Render,
-        )
-            .chain(),
+        (AppSet::RecordInput, AppSet::Visibility, AppSet::Update, AppSet::Render).chain(),
     );
 
     app.insert_resource(app_settings);

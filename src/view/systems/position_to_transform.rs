@@ -9,13 +9,7 @@ use crate::{
 };
 
 pub fn position_to_transform(
-    mut q_objects: Query<(
-        &Position,
-        &Renderable,
-        &mut Text2d,
-        &mut TextColor,
-        &mut Transform,
-    )>,
+    mut q_objects: Query<(&Position, &Renderable, &mut Text2d, &mut TextColor, &mut Transform)>,
 ) {
     for (position, renderable, mut text, mut text_color, mut transform) in &mut q_objects {
         // Update the text with the current glyph

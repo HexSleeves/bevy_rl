@@ -1,10 +1,12 @@
 use bevy::prelude::*;
 
-use crate::model::{
-    components::{Position, Renderable},
-    model_constants::ModelConstants,
+use crate::{
+    model::{
+        components::{Position, Renderable},
+        model_constants::ModelConstants,
+    },
+    view::ViewConstants,
 };
-use crate::view::ViewConstants;
 
 // Helper function to spawn an ASCII entity
 pub fn spawn_ascii_entity(
@@ -16,11 +18,7 @@ pub fn spawn_ascii_entity(
 ) -> Entity {
     let font = asset_server.load("fonts/FiraMono-Medium.ttf");
 
-    let text_style = TextFont {
-        font: font.clone(),
-        font_size: 25.0,
-        ..default()
-    };
+    let text_style = TextFont { font: font.clone(), font_size: 25.0, ..default() };
 
     let entity = commands
         .spawn((

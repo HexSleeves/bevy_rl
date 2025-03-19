@@ -30,21 +30,11 @@ pub fn add_sprite_to_tile(
 
         let font = asset_server.load("fonts/FiraMono-Medium.ttf");
 
-        let text_style = TextFont {
-            font: font.clone(),
-            font_size: 25.0,
-            ..default()
-        };
+        let text_style = TextFont { font: font.clone(), font_size: 25.0, ..default() };
 
         let renderable = match tile_type {
-            TerrainType::Floor => Renderable {
-                glyph: '.',
-                color: Color::WHITE,
-            },
-            TerrainType::Wall => Renderable {
-                glyph: '#',
-                color: Color::WHITE,
-            },
+            TerrainType::Floor => Renderable { glyph: '.', color: Color::WHITE },
+            TerrainType::Wall => Renderable { glyph: '#', color: Color::WHITE },
         };
 
         commands.entity(entity).insert((

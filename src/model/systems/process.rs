@@ -1,110 +1,80 @@
-use bevy::prelude::*;
+use bevy::{ecs::system::SystemState, prelude::*};
 
 use crate::model::{
-    commands::TryMove,
-    components::{AIControlled, AwaitingInput, MoveDirection, Player, TurnActor},
-    resources::{ActionQueue, ActionType, TurnSystem},
+    components::{AwaitingInput, PlayerTag, TurnActor},
+    resources::TurnQueue,
 };
 
-pub fn process_turns(
-    mut commands: Commands,
-    mut turn_system: ResMut<TurnSystem>,
-    mut action_queue: ResMut<ActionQueue>,
-    awaiting_input: Query<Entity, With<AwaitingInput>>,
-    actor_query: Query<(Entity, Option<&Player>, Option<&AIControlled>), With<TurnActor>>,
-) {
-    // Don't process new turns if:
-    // 1. Actions are still being processed
-    // 2. Waiting for player input
-    // 3. Waiting for animations
-    if !action_queue.is_empty()
-        || !awaiting_input.is_empty()
-        || action_queue.is_waiting_for_animation()
-    {
+pub fn process_turns(world: &mut World) {
+    // Break if we're waiting for player input
+    if world.query_filtered::<(), With<AwaitingInput>>().iter(world).count() > 0 {
         return;
     }
 
-    log::info!("Processing turns");
-    turn_system.print_queue();
+    // Quick check if any actor has actions
+    // {
+    //     let mut query = world.query::<&TurnActor>();
+    //     let has_actions = query.iter(world).any(|actor| !actor.actions.is_empty());
+    //     if !has_actions {
+    //         println!("No actions to process. Skipping...");
+    //         return; // Skip the expensive processing
+    //     }
+    // }
 
-    // Process next turn
-    if let Some((entity, _time)) = turn_system.get_next_actor() {
-        if let Ok((entity, player, ai)) = actor_query.get(entity) {
-            if player.is_some() {
-                // Player's turn - wait for input
-                commands.entity(entity).insert(AwaitingInput);
-                log::info!("Player's turn");
-            } else if ai.is_some() {
-                // AI's turn - decide action immediately
-                let action = decide_ai_action(entity, &actor_query);
-                action_queue.push(entity, action);
-                log::info!("AI's turn");
-            }
+    // Limit how many turns we process per frame
+    // let start_time = std::time::Instant::now();
+    // let max_processing_time = std::time::Duration::from_millis(5);
+
+    // Process turns until budget is exhausted
+    // while start_time.elapsed() < max_processing_time {
+    let mut state: SystemState<(Query<(Entity, &mut TurnActor, Option<&PlayerTag>)>,)> =
+        SystemState::new(world);
+
+    world.resource_scope(|world, mut turn_queue: Mut<TurnQueue>| {
+        // Periodically clean up the queue
+        let metrics = turn_queue.cleanup_dead_entities(world);
+
+        // Log significant cleanups
+        if metrics.entities_removed > 10 {
+            log::info!(
+                "Turn queue cleanup: removed {} entities in {:?}",
+                metrics.entities_removed,
+                metrics.processing_time
+            );
         }
-    }
-}
 
-// Helper function for AI decision making
-fn decide_ai_action(
-    _entity: Entity,
-    _query: &Query<(Entity, Option<&Player>, Option<&AIControlled>), With<TurnActor>>,
-) -> ActionType {
-    // Simple AI logic - for illustration
-    let random_dir = match fastrand::i32(0..4) {
-        0 => MoveDirection::North,
-        1 => MoveDirection::East,
-        2 => MoveDirection::South,
-        _ => MoveDirection::West,
-    };
+        while let Some((entity, time)) = turn_queue.get_next_actor() {
+            let (mut q_actor,) = state.get_mut(world);
+            let Ok((entity, mut actor, player)) = q_actor.get_mut(entity) else {
+                log::error!("Actor not found: {:?}", entity);
+                continue;
+            };
 
-    ActionType::Move(random_dir)
-}
+            if !actor.is_alive() {
+                log::info!("Actor is dead. Why is it still in the queue?");
+                continue;
+            }
 
-pub fn process_action_queue(
-    mut commands: Commands,
-    mut action_queue: ResMut<ActionQueue>,
-    mut turn_system: ResMut<TurnSystem>,
-    actor_query: Query<(Entity, &TurnActor)>,
-    // collision_query: Query<(Entity, &Position)>,
-) {
-    // Don't process if waiting for animations
-    if action_queue.is_waiting_for_animation() {
-        return;
-    }
+            if player.is_some() && actor.peak_next_action().is_none() {
+                world.entity_mut(entity).insert(AwaitingInput);
+                turn_queue.schedule_turn(entity, time);
+                log::info!("Player is awaiting input: {:?}", entity);
+                return;
+            }
 
-    // Make sure all actors have actions queued before processing
-    let actor_count = actor_query.iter().count();
-    if action_queue.is_empty() {
-        // if action_queue.is_empty() || action_queue.len() < actor_count {
-        return;
-    }
+            let Some(action) = actor.next_action() else {
+                log::info!("No action for entity: {:?}. Rescheduling turn.", entity);
+                turn_queue.schedule_turn(entity, time);
+                return;
+            };
 
-    log::info!("Processing action queue");
-    action_queue.print_queue();
-
-    // Process next action
-    while let Some(action) = action_queue.next_action() {
-        log::info!("Processing action: {:?}", action);
-        if let Ok((entity, turn_actor)) = actor_query.get(action.entity) {
-            match action.action_type {
-                ActionType::Move(dir) => {
-                    commands.entity(entity).queue(TryMove::new(dir));
-
-                    // Schedule entity's next turn (only after completing action)
-                    turn_system.schedule_turn(entity, turn_actor.speed);
-                }
-                ActionType::Attack(_target) => {
-                    // Handle attack logic...
-
-                    // Schedule next turn
-                    turn_system.schedule_turn(entity, turn_actor.speed * 2);
-                }
-                // Other action types...
-                _ => {
-                    // Default fallback
-                    turn_system.schedule_turn(entity, turn_actor.speed);
+            match action.perform(world) {
+                Ok(d_time) => turn_queue.schedule_turn(entity, time + d_time),
+                Err(e) => {
+                    log::error!("Failed to perform action: {:?}", e);
                 }
             }
         }
-    }
+    });
+    // }
 }

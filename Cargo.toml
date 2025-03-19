@@ -66,12 +66,19 @@ bevy = { version = "0.15", default-features = false, features = [
   "x11",
 ] }
 
+# A fast random number generator
+fastrand = { version = "2" }
 # A thread-safe, lazy initialization library
 once_cell = { version = "1" }
 # A generic serialization/deserialization framework
 serde = { version = "1", features = ["derive", "rc", "alloc"] }
-rand = { version = "0.9" }
-fastrand = { version = "2" }
+# 'Small vector' optimization: store up to a small number of items on the stack
+smallvec = { version = "1" }
+# Random number generator
+# rand = { version = "0.9" }
+# Error handling
+anyhow = { version = "1" }
+thiserror = { version = "2" }
 
 # keep the following in sync with Bevy's dependencies
 winit = { version = "0.30", default-features = false }
