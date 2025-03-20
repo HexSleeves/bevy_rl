@@ -23,25 +23,40 @@ Located in `src/model/`
 
 #### Components
 
-- **Player**: Marks an entity as player-controlled
+- **PlayerTag**: Marks an entity as player-controlled
 - **Position**: Stores entity location with comprehensive vector operations
 - **Description**: Contains entity description text
 - **Renderable**: Visual representation (glyph and color)
 - **TerrainType**: Defines terrain properties (Wall, Floor)
 - **TurnActor**: Manages turn-based timing and scheduling
-- **Action**: Represents actions entities can take (Move, Attack, Wait)
+- **Actor**: Identifies entities that can take actions
 
 #### Resources
 
-- **Map**: Stores terrain layout using a HashMap for efficient position lookups
+- **CurrentMap**: Stores terrain layout using a HashMap for efficient position lookups
 - **TurnQueue**: Manages turn order and timing for all actors
+
+#### Actions
+
+- **GameAction**: Trait for defining executable game actions
+- **BuildableGameAction**: Trait for actions with builder pattern support
+- **Walk**: Concrete implementation for movement actions using builder pattern
+
+#### Commands
+
+- **TryMove**: EntityCommand for attempting movement with collision detection
+
+#### Types
+
+- **MoveDirection**: Enum for cardinal directions with vector operations
+- **ActionType**: Enum for different action types (Move, Attack, Wait)
+- **GameError**: Error types for game logic failures
 
 #### Systems
 
 - **spawn_map**: Procedurally generates the game world
 - **spawn_player**: Creates the player entity with required components
 - **process_turns**: Core turn management system that schedules actor turns
-- **execute_actions**: Processes entity actions and updates game state
 
 #### Constants
 
@@ -54,10 +69,11 @@ Located in `src/view/`
 #### Systems
 
 - **position_to_transform**: Converts logical positions to screen coordinates
+- **add_sprite_to_tile**: Adds visual representation to map tiles
 
 #### Utils
 
-- **spawn_ascii_entity**: Helper function for creating ASCII-based entities
+- **spawner**: Helper functions for creating visual entities
 
 #### Constants
 
@@ -69,11 +85,11 @@ Located in `src/controller/`
 
 #### Systems
 
-- **player_input_system**: Processes keyboard input and converts it to game actions
+- **keyboard_input**: Processes keyboard input and converts it to game actions
 
-#### Actions
+#### Types
 
-- **MoveDirection**: Enum for cardinal directions with vector operations
+- **Direction**: Enum for movement directions with vector operations
 - **InputAction**: Player-specific actions that can be mapped to keys
 
 ### 5. UI (Interface)
@@ -87,6 +103,15 @@ Located in `src/ui/`
 #### Systems
 
 - **spawn_camera**: Creates and configures the game camera
+
+### 6. Macros and Utilities
+
+Located in `src/macros/`
+
+#### Debug Macros
+
+- **impl_debug_with_field**: Macro for implementing Debug trait for structs
+- **impl_game_action**: Macro for implementing the GameAction builder pattern
 
 ## Game Flow
 
@@ -106,7 +131,7 @@ Located in `src/ui/`
 3. Turn-based flow:
    - Turn queue tracks all actors and their next action time
    - Player input is awaited when it's the player's turn
-   - Actions are executed and affect the game state
+   - Actions are executed through the GameAction trait
    - Turn timing is managed by the TurnActor component
 
 ## Technical Implementation
@@ -120,6 +145,7 @@ The game leverages Bevy's Entity Component System (ECS) for efficient state mana
 - **Systems**: Process entities with specific components
 - **Resources**: Store global state (Map, TurnQueue)
 - **Events**: Handle communication between systems
+- **Commands**: Define entity-specific operations (TryMove)
 
 ### Window Configuration
 
@@ -154,12 +180,19 @@ The game leverages Bevy's Entity Component System (ECS) for efficient state mana
 - Priority queue approach for actor scheduling
 - Action component pattern for command processing
 - Clear separation between input handling and action execution
+- Builder pattern for constructing game actions
 
 ### 4. Vector Operations
 
 - Comprehensive Position implementation with operator overloading
 - Direction enums with vector operations
 - Efficient position calculations and transformations
+
+### 5. Error Handling
+
+- GameError enum for type-safe error handling
+- Proper error propagation in game actions
+- Result return types for fallible operations
 
 ## Code Organization
 
@@ -168,8 +201,17 @@ src/
 ├── app_constants.rs    # Global constants
 ├── app_settings.rs     # Configuration settings
 ├── controller/         # Input handling
+├── macros/             # Custom macros for the project
+│   ├── debug.rs        # Debug utilities and macros
 ├── main.rs             # Application entry point
 ├── model/              # Game state and logic
+│   ├── actions/        # Game action implementations
+│   ├── commands/       # Entity command implementations
+│   ├── components/     # Entity components
+│   ├── resources/      # Global resources
+│   ├── systems/        # Game logic systems
+│   ├── types/          # Type definitions and traits
+│   └── utils/          # Helper functions
 ├── ui/                 # User interface
 └── view/               # Rendering and display
 ```
@@ -207,3 +249,4 @@ src/
 - Leverage Rust's type system for compile-time safety
 - Follow Rust idioms and best practices
 - Maintain separation of concerns through the MVC pattern
+- Utilize builder pattern for complex object construction
