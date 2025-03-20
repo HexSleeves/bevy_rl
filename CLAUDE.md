@@ -50,3 +50,11 @@
 - Use integration tests for verifying game mechanics work together properly
 - Update ARCHITECTURE.md when adding new modules, components, or design patterns
 - Use conventional commits format for documentation changes (docs: update...)
+
+## Version Control Practices
+
+- Autocommit changes after completing a task to prevent accumulation of unstaged files
+- Use conventional commit format (feat:, fix:, docs:, chore:, etc.)
+- Prefer small, focused commits over large changesets
+- Include clear descriptions of changes and their purpose
+- Remove unused files with appropriate commit messages (chore: remove...)
