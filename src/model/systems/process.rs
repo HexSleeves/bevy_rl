@@ -1,8 +1,10 @@
 use bevy::{ecs::system::SystemState, prelude::*};
 
 use crate::model::{
+    actions::WalkBuilder,
     components::{AwaitingInput, PlayerTag, TurnActor},
     resources::TurnQueue,
+    types::{GameActionBuilder, MoveDirection},
 };
 
 pub fn process_turns(world: &mut World) {
@@ -21,12 +23,6 @@ pub fn process_turns(world: &mut World) {
     //     }
     // }
 
-    // Limit how many turns we process per frame
-    // let start_time = std::time::Instant::now();
-    // let max_processing_time = std::time::Duration::from_millis(5);
-
-    // Process turns until budget is exhausted
-    // while start_time.elapsed() < max_processing_time {
     let mut state: SystemState<(Query<(Entity, &mut TurnActor, Option<&PlayerTag>)>,)> =
         SystemState::new(world);
 
@@ -43,8 +39,11 @@ pub fn process_turns(world: &mut World) {
             );
         }
 
+        turn_queue.print_queue();
+
         while let Some((entity, time)) = turn_queue.get_next_actor() {
             let (mut q_actor,) = state.get_mut(world);
+
             let Ok((entity, mut actor, player)) = q_actor.get_mut(entity) else {
                 log::error!("Actor not found: {:?}", entity);
                 continue;
@@ -55,7 +54,10 @@ pub fn process_turns(world: &mut World) {
                 continue;
             }
 
-            if player.is_some() && actor.peak_next_action().is_none() {
+            let is_player = player.is_some();
+            let has_action = actor.peak_next_action().is_some();
+
+            if is_player && !has_action {
                 world.entity_mut(entity).insert(AwaitingInput);
                 turn_queue.schedule_turn(entity, time);
                 log::info!("Player is awaiting input: {:?}", entity);
@@ -63,18 +65,33 @@ pub fn process_turns(world: &mut World) {
             }
 
             let Some(action) = actor.next_action() else {
-                log::info!("No action for entity: {:?}. Rescheduling turn.", entity);
+                // log::info!("No action for entity: {:?}. Rescheduling turn.", entity);
+                // turn_queue.schedule_turn(entity, time);
+                // return;
+
+                // Generate a random walk direction
+                let direction = MoveDirection::random_direction();
+                actor.add_action(
+                    WalkBuilder::new().with_entity(entity).with_direction(direction.into()).build(),
+                );
+
                 turn_queue.schedule_turn(entity, time);
                 return;
             };
 
+            // Get next action and drop turn_queue borrow temporarily
             match action.perform(world) {
                 Ok(d_time) => turn_queue.schedule_turn(entity, time + d_time),
                 Err(e) => {
                     log::error!("Failed to perform action: {:?}", e);
+
+                    if is_player {
+                        turn_queue.schedule_turn(entity, time);
+                    } else {
+                        turn_queue.schedule_turn(entity, time + 100);
+                    }
                 }
             }
         }
     });
-    // }
 }

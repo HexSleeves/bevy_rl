@@ -21,8 +21,7 @@ impl TurnQueue {
     }
 
     // Add actor to the queue with wrapping time calculation
-    pub fn schedule_turn(&mut self, entity: Entity, delay: u64) {
-        let next_time = self.current_time.wrapping_add(delay);
+    pub fn schedule_turn(&mut self, entity: Entity, next_time: u64) {
         self.turn_queue.push(Reverse((next_time, entity)));
     }
 

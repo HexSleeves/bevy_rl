@@ -24,6 +24,13 @@ impl MoveDirection {
             MoveDirection::West => (-1, 0),
         }
     }
+
+    pub fn all_directions() -> [MoveDirection; 4] { MoveDirection::ALL_DIRECTIONS }
+
+    pub fn random_direction() -> MoveDirection {
+        let mut rng = fastrand::Rng::new();
+        MoveDirection::ALL_DIRECTIONS[rng.usize(0..MoveDirection::ALL_DIRECTIONS.len())]
+    }
 }
 
 impl Add<Position> for MoveDirection {
