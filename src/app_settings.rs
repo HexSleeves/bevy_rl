@@ -64,12 +64,16 @@ pub struct AppSettings {
 }
 
 impl Default for AppSettings {
-    fn default() -> Self { Self { tile_size: 16, fullscreen: false, view_size: (60, 40) } }
+    fn default() -> Self {
+        Self { tile_size: 16, fullscreen: false, view_size: (60, 40) }
+    }
 }
 
 impl AppSettings {
     #[must_use]
-    pub const fn fullscreen(&self) -> bool { self.fullscreen }
+    pub const fn fullscreen(&self) -> bool {
+        self.fullscreen
+    }
 
     // #[must_use]
     // pub const fn window_width(&self) -> f32 {

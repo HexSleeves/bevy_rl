@@ -74,6 +74,8 @@ once_cell = { version = "1" }
 serde = { version = "1", features = ["derive", "rc", "alloc"] }
 # 'Small vector' optimization: store up to a small number of items on the stack
 smallvec = { version = "1" }
+# Bit-level storage for improved memory efficiency
+bitvec = { version = "1" }
 # Random number generator
 # rand = { version = "0.9" }
 # Error handling

@@ -16,7 +16,9 @@ pub struct WalkBuilder {
 }
 
 impl WalkBuilder {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     pub fn with_entity(mut self, entity: Entity) -> Self {
         self.entity = Some(entity);
@@ -35,14 +37,13 @@ pub struct Walk {
 }
 
 impl GameAction for Walk {
-    fn entity(&self) -> Option<Entity> { Some(self.entity) }
+    fn entity(&self) -> Option<Entity> {
+        Some(self.entity)
+    }
 
     fn perform(&self, world: &mut World) -> Result<u64, GameError> {
-        let mut state: SystemState<(
-            ResMut<CurrentMap>,
-            Query<&mut Position>,
-            Query<&TerrainType>,
-        )> = SystemState::new(world);
+        let mut state: SystemState<(ResMut<CurrentMap>, Query<&mut Position>, Query<&TerrainType>)> =
+            SystemState::new(world);
 
         // Get references to the data
         let (current_map, mut q_position, q_terrain_type) = state.get_mut(world);

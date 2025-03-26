@@ -15,11 +15,7 @@ impl<T> Grid<T> {
     /// Create a new `Grid` from a `(width, height)` and `Vec<T>`.
     /// Panics if the data length doesn't match width * height.
     pub fn new(size: (usize, usize), data: Vec<T>) -> Self {
-        assert_eq!(
-            data.len(),
-            size.0 * size.1,
-            "Data length must match grid dimensions"
-        );
+        assert_eq!(data.len(), size.0 * size.1, "Data length must match grid dimensions");
         Self { size, data }
     }
 
@@ -36,6 +32,15 @@ impl<T> Grid<T> {
     {
         let capacity = size.0 * size.1;
         Self::new(size, vec![value; capacity])
+    }
+
+    /// Create a new `Grid` filled with the specified value
+    /// Alias for new_clone with a more intuitive name
+    pub fn new_fill(size: (usize, usize), value: T) -> Self
+    where
+        T: Clone,
+    {
+        Self::new_clone(size, value)
     }
 
     /// Create a new `Grid` from a `(width, height)` obtaining a value from a `Fn(index, position) -> T`.
@@ -129,10 +134,7 @@ impl<T> Grid<T> {
     /// Converts an index into a position
     #[inline]
     pub const fn index_to_position_unchecked(&self, index: usize) -> (i32, i32) {
-        (
-            (index % self.width() as usize) as i32,
-            (index / self.width() as usize) as i32,
-        )
+        ((index % self.width() as usize) as i32, (index / self.width() as usize) as i32)
     }
 }
 

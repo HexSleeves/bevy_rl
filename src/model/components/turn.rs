@@ -27,13 +27,17 @@ impl TurnActor {
         self.actions.push_back(Box::new(action));
     }
 
-    pub fn next_action(&mut self) -> Option<Box<dyn GameAction>> { self.actions.pop_front() }
+    pub fn next_action(&mut self) -> Option<Box<dyn GameAction>> {
+        self.actions.pop_front()
+    }
 
     pub fn peak_next_action(&self) -> Option<&dyn GameAction> {
         self.actions.front().map(Box::as_ref)
     }
 
-    pub fn is_alive(&self) -> bool { self.alive }
+    pub fn is_alive(&self) -> bool {
+        self.alive
+    }
 }
 
 #[derive(Component)]

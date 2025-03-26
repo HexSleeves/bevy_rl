@@ -25,7 +25,9 @@ impl MoveDirection {
         }
     }
 
-    pub fn all_directions() -> [MoveDirection; 4] { MoveDirection::ALL_DIRECTIONS }
+    pub fn all_directions() -> [MoveDirection; 4] {
+        MoveDirection::ALL_DIRECTIONS
+    }
 
     pub fn random_direction() -> MoveDirection {
         let mut rng = fastrand::Rng::new();
@@ -45,7 +47,9 @@ impl Add<Position> for MoveDirection {
 impl Add<MoveDirection> for Position {
     type Output = Position;
 
-    fn add(self, rhs: MoveDirection) -> Self::Output { rhs + self }
+    fn add(self, rhs: MoveDirection) -> Self::Output {
+        rhs + self
+    }
 }
 
 impl From<MoveDirection> for IVec2 {

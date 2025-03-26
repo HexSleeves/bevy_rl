@@ -37,7 +37,9 @@ impl TurnQueue {
     }
 
     // Get current time
-    pub fn current_time(&self) -> u64 { self.current_time }
+    pub fn current_time(&self) -> u64 {
+        self.current_time
+    }
 
     // Peek at next actor without removing
     pub fn peek_next(&self) -> Option<(Entity, u64)> {
@@ -50,7 +52,9 @@ impl TurnQueue {
     }
 
     // Properly handle time comparison with wrapping
-    pub fn time_until(&self, time: u64) -> u64 { time.wrapping_sub(self.current_time) }
+    pub fn time_until(&self, time: u64) -> u64 {
+        time.wrapping_sub(self.current_time)
+    }
 
     // Compare two times accounting for wrapping
     pub fn is_before(&self, time_a: u64, time_b: u64) -> bool {

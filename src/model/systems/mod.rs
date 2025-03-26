@@ -6,3 +6,6 @@ pub use self::spawn_player::*;
 
 pub mod process;
 pub use self::process::*;
+
+pub mod fov;
+pub use self::fov::*;

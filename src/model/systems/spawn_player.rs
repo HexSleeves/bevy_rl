@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::model::{
-    components::{AITag, PlayerTag, Position, Renderable, TerrainType, TurnActor},
+    components::{AITag, PlayerTag, Position, Renderable, TerrainType, TurnActor, ViewShed},
     resources::{CurrentMap, TurnQueue},
     utils::spawn_ascii_entity,
     ModelConstants,
@@ -18,8 +18,7 @@ pub fn spawn_player(
     let mut valid_positions = Vec::new();
     for y in 1..ModelConstants::MAP_HEIGHT - 1 {
         for x in 1..ModelConstants::MAP_WIDTH - 1 {
-            if let Some(terrain_entity) = current_map.get_terrain(Position::new(x as i32, y as i32))
-            {
+            if let Some(terrain_entity) = current_map.get_terrain(Position::new(x as i32, y as i32)) {
                 if let Ok(terrain_type) = terrain_query.get(terrain_entity) {
                     if *terrain_type == TerrainType::Floor {
                         valid_positions.push((x as i32, y as i32));
@@ -40,12 +39,12 @@ pub fn spawn_player(
         Some(Position::new(x, y)),
         Renderable {
             glyph: '@',
-            color: Color::srgb(1.0, 1.0, 0.0), // Yellow
+            color: Color::srgb(1.0, 1.0, 0.0), // #ffff00
         },
         1.0,
     );
 
-    commands.entity(player_id).insert((PlayerTag, TurnActor::new(100)));
+    commands.entity(player_id).insert((PlayerTag, TurnActor::new(100), ViewShed { radius: 8 }));
 
     // Spawn an enemy
     let (x, y) = valid_positions[rng.usize(0..valid_positions.len())];
@@ -56,7 +55,7 @@ pub fn spawn_player(
         Some(actor_position),
         Renderable {
             glyph: 'E',
-            color: Color::srgb(1.0, 0.0, 0.0), // Red
+            color: Color::srgb(1.0, 0.0, 0.0), // #ff0000
         },
         1.0,
     );

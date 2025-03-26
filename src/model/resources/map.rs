@@ -22,7 +22,8 @@ impl FromWorld for Map {
             size,
             actors: HashMap::new(),
             terrain: Grid::new_fn(size, |_index, (x, y)| {
-                let (tile_type, tile_description) = if x == 0 || y == 0 || x == size.0 - 1 || y == size.1 - 1 {
+                let (tile_type, tile_description) = if x == 0 || y == 0 || x == size.0 - 1 || y == size.1 - 1
+                {
                     (TerrainType::Wall, Description::new("Wall"))
                 } else {
                     (TerrainType::Floor, Description::new("Floor"))
@@ -47,9 +48,13 @@ impl Map {
         Self { size, terrain, actors: HashMap::new() }
     }
 
-    pub fn get_terrain(&self, position: Position) -> Option<Entity> { self.terrain.get(position.into()).copied() }
+    pub fn get_terrain(&self, position: Position) -> Option<Entity> {
+        self.terrain.get(position.into()).copied()
+    }
 
-    pub fn get_actor(&self, position: Position) -> Option<Entity> { self.actors.get(&position).copied() }
+    pub fn get_actor(&self, position: Position) -> Option<Entity> {
+        self.actors.get(&position).copied()
+    }
 
     pub fn set_actor(&mut self, position: Position, actor: Option<Entity>) {
         if let Some(actor) = actor {
@@ -57,5 +62,11 @@ impl Map {
         } else {
             self.actors.remove(&position);
         }
+    }
+
+    // Helper method to check if a position is in bounds
+    pub fn is_in_bounds(&self, position: Position) -> bool {
+        let (x, y) = position.into();
+        x >= 0 && y >= 0 && x < self.size.0 as i32 && y < self.size.1 as i32
     }
 }

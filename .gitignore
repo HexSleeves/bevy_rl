@@ -1,7 +1,14 @@
+# Devenv
+.devenv*
+devenv.local.nix
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml
+
+*.log
 /target
 .idea/
 .DS_Store
-
-dist/
-*.log
-.direnv

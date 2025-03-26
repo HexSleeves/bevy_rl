@@ -9,7 +9,9 @@ use crate::model::{
 pub struct TryMove(pub MoveDirection);
 
 impl TryMove {
-    pub fn new(dir: MoveDirection) -> Self { Self(dir) }
+    pub fn new(dir: MoveDirection) -> Self {
+        Self(dir)
+    }
 }
 
 impl EntityCommand for TryMove {

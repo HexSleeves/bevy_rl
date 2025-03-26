@@ -33,8 +33,11 @@ pub fn add_sprite_to_tile(
         let text_style = TextFont { font: font.clone(), font_size: 25.0, ..default() };
 
         let renderable = match tile_type {
-            TerrainType::Floor => Renderable { glyph: '.', color: Color::WHITE },
-            TerrainType::Wall => Renderable { glyph: '#', color: Color::WHITE },
+            TerrainType::Floor => Renderable { glyph: '.', color: Color::srgb(0.5, 0.5, 0.5) }, /* #808080 */
+            TerrainType::Wall => Renderable { glyph: '#', color: Color::srgb(0.7, 0.7, 0.7) },  /* #b3b3b3 */
+            TerrainType::Door => Renderable { glyph: '+', color: Color::srgb(0.65, 0.4, 0.1) }, /* #a66719 */
+            TerrainType::UpStairs => Renderable { glyph: '<', color: Color::srgb(1.0, 1.0, 0.0) }, /* #ffff00 */
+            TerrainType::DownStairs => Renderable { glyph: '>', color: Color::srgb(1.0, 1.0, 0.0) }, /* #ffff00 */
         };
 
         commands.entity(entity).insert((

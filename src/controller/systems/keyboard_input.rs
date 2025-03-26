@@ -46,9 +46,7 @@ pub fn player_input_system(
 
         if let Some(act) = &action {
             if let ActionType::Move(dir) = act {
-                p_actor.add_action(
-                    Walk::builder().with_entity(entity).with_direction((*dir).into()).build(),
-                );
+                p_actor.add_action(Walk::builder().with_entity(entity).with_direction((*dir).into()).build());
             }
 
             commands.entity(entity).remove::<AwaitingInput>();

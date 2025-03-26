@@ -11,7 +11,9 @@ pub struct WaitBuilder {
 }
 
 impl WaitBuilder {
-    pub fn new() -> Self { Self::default() }
+    pub fn new() -> Self {
+        Self::default()
+    }
 
     pub fn with_entity(mut self, entity: Entity) -> Self {
         self.entity = Some(entity);
@@ -24,7 +26,9 @@ pub struct Wait {
 }
 
 impl GameAction for Wait {
-    fn entity(&self) -> Option<Entity> { Some(self.entity) }
+    fn entity(&self) -> Option<Entity> {
+        Some(self.entity)
+    }
     fn perform(&self, _world: &mut World) -> Result<u64, GameError> {
         log::info!("Entity {} is waiting", self.entity);
         Ok(1000)

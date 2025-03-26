@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::systems::{add_sprite_to_tile, position_to_transform};
+use super::systems::{add_sprite_to_tile, position_to_transform, update_sprite_visibility};
 use crate::{AppSet, RunningState};
 
 pub struct ViewPlugin;
@@ -16,7 +16,7 @@ impl Plugin for ViewPlugin {
         app.add_systems(
             PostUpdate,
             (
-                (add_sprite_to_tile),
+                (add_sprite_to_tile, update_sprite_visibility),
                 position_to_transform.in_set(AppSet::Render).run_if(not(in_state(RunningState::Paused))),
             ),
         );
