@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::model::{
-    components::{AwaitingInput, PlayerTag, Position, TerrainType, ViewShed},
+    components::{PlayerTag, Position, TerrainType, ViewShed},
     resources::{CurrentMap, FovMap},
 };
 
@@ -11,13 +11,9 @@ pub fn compute_fov(
     mut fov_map: ResMut<FovMap>,
     q_terrain: Query<&TerrainType>,
     query: Query<(&Position, &ViewShed), With<PlayerTag>>,
-    awaiting_input: Query<&AwaitingInput>,
 ) {
-    if !awaiting_input.is_empty() {
-        return;
-    }
-
     if let Ok((player_pos, view_shed)) = query.get_single() {
+        log::info!("Computing FOV for player at {:?}", player_pos);
         fov_map.compute_fov(&q_terrain, &map, *player_pos, view_shed.radius);
     }
 }

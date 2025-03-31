@@ -3,96 +3,10 @@ use brtk::grid::Grid;
 
 use crate::model::{
     components::{Description, Position, TerrainType},
-    generation::Room,
-    resources::Map,
     ModelConstants,
 };
 
-const SHOW_MAPGEN_VISUALIZER: bool = false;
-
-pub trait InitialMapBuilder {
-    fn build_map(&mut self, rng: &mut fastrand::Rng, build_data: &mut BuilderMap);
-}
-
-pub trait MetaMapBuilder {
-    fn build_map(&mut self, rng: &mut fastrand::Rng, build_data: &mut BuilderMap);
-}
-
-pub struct BuilderMap {
-    pub map: Map,
-    pub history: Vec<Map>,
-    pub rooms: Option<Vec<Rect>>,
-    pub spawn_list: Vec<(usize, String)>,
-    pub starting_position: Option<Position>,
-    pub corridors: Option<Vec<Vec<usize>>>,
-}
-
-// impl BuilderMap {
-//     fn take_snapshot(&mut self) {
-//         if SHOW_MAPGEN_VISUALIZER {
-//             let mut snapshot = self.map.clone();
-//             for v in snapshot.revealed_tiles.iter_mut() {
-//                 *v = true;
-//             }
-//             self.history.push(snapshot);
-//         }
-//     }
-// }
-
-pub struct BuilderChain {
-    starter: Option<Box<dyn InitialMapBuilder>>,
-    builders: Vec<Box<dyn MetaMapBuilder>>,
-    pub build_data: BuilderMap,
-}
-
-impl BuilderChain {
-    pub fn new(commands: &mut Commands, _new_depth: i32) -> BuilderChain {
-        BuilderChain {
-            starter: None,
-            builders: Vec::new(),
-            build_data: BuilderMap {
-                spawn_list: Vec::new(),
-                starting_position: None,
-                rooms: None,
-                corridors: None,
-                history: Vec::new(),
-                map: Map::new(commands, (ModelConstants::MAP_WIDTH, ModelConstants::MAP_HEIGHT)),
-            },
-        }
-    }
-
-    pub fn start_with(&mut self, starter: Box<dyn InitialMapBuilder>) {
-        match self.starter {
-            None => self.starter = Some(starter),
-            Some(_) => panic!("You can only have one starting builder."),
-        };
-    }
-
-    pub fn with(&mut self, metabuilder: Box<dyn MetaMapBuilder>) {
-        self.builders.push(metabuilder);
-    }
-
-    pub fn build_map(&mut self, rng: &mut fastrand::Rng) {
-        match &mut self.starter {
-            None => panic!("Cannot run a map builder chain without a starting build system"),
-            Some(starter) => {
-                // Build the starting map
-                starter.build_map(rng, &mut self.build_data);
-            }
-        }
-
-        // Build additional layers in turn
-        for metabuilder in self.builders.iter_mut() {
-            metabuilder.build_map(rng, &mut self.build_data);
-        }
-    }
-
-    // pub fn spawn_entities(&mut self, ecs: &mut World) {
-    //     for entity in self.build_data.spawn_list.iter() {
-    //         // spawner::spawn_entity(ecs, &(&entity.0, &entity.1));
-    //     }
-    // }
-}
+use super::Room;
 
 pub struct DungeonGenerator {
     pub width: usize,
@@ -162,7 +76,7 @@ impl DungeonGenerator {
         }
 
         // Add doors between rooms and corridors
-        self.place_doors(&mut grid, rng);
+        // self.place_doors(&mut grid, rng);
 
         // Place stairs
         if !self.rooms.is_empty() {

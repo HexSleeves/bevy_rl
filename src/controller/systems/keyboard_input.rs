@@ -5,6 +5,7 @@ use crate::model::{
     actions::Walk,
     components::{AwaitingInput, TurnActor},
     types::{ActionType, BuildableGameAction, GameActionBuilder, MoveDirection},
+    GameState,
 };
 #[macro_export]
 macro_rules! action_keys {
@@ -28,8 +29,8 @@ static ACTION_KEYS: Lazy<HashMap<ActionType, Vec<KeyCode>>> = action_keys![
 /// System that handles player input and converts it into game actions
 pub fn player_input_system(
     mut commands: Commands,
-    // mut action_queue: ResMut<ActionQueueV2>,
     input: Res<ButtonInput<KeyCode>>,
+    mut next_state: ResMut<NextState<GameState>>,
     q_awaiting_input: Option<Single<(Entity, &mut TurnActor), With<AwaitingInput>>>,
 ) {
     if let Some(a) = q_awaiting_input {
@@ -38,7 +39,7 @@ pub fn player_input_system(
 
         for (act, keys) in ACTION_KEYS.iter() {
             if keys.iter().any(|key| input.just_pressed(*key)) {
-                // log::info!("Player input: {:?}", act);
+                log::info!("Player input: {:?}", act);
                 action = Some(*act);
                 break;
             }
@@ -50,6 +51,7 @@ pub fn player_input_system(
             }
 
             commands.entity(entity).remove::<AwaitingInput>();
+            next_state.set(GameState::MonstersTurn);
         }
     }
 }

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::model::{
     components::{AITag, PlayerTag, Position, Renderable, TerrainType, TurnActor, ViewShed},
-    resources::{CurrentMap, TurnQueue},
+    resources::{CurrentMap, SpawnPoint, TurnQueue},
     utils::spawn_ascii_entity,
     ModelConstants,
 };
@@ -13,30 +13,24 @@ pub fn spawn_player(
     asset_server: Res<AssetServer>,
     mut turn_system: ResMut<TurnQueue>,
     terrain_query: Query<&TerrainType>,
+    spawn_point: Option<Res<SpawnPoint>>,
 ) {
-    // Find a valid floor tile for the player
-    let mut valid_positions = Vec::new();
-    for y in 1..ModelConstants::MAP_HEIGHT - 1 {
-        for x in 1..ModelConstants::MAP_WIDTH - 1 {
-            if let Some(terrain_entity) = current_map.get_terrain(Position::new(x as i32, y as i32)) {
-                if let Ok(terrain_type) = terrain_query.get(terrain_entity) {
-                    if *terrain_type == TerrainType::Floor {
-                        valid_positions.push((x as i32, y as i32));
-                    }
-                }
-            }
+    // Determine where to spawn the player
+    let player_position = if let Some(spawn_point) = spawn_point {
+        if let Some(pos) = spawn_point.player_spawn {
+            pos
+        } else {
+            find_valid_position(&current_map, &terrain_query)
         }
-    }
+    } else {
+        find_valid_position(&current_map, &terrain_query)
+    };
 
-    // Choose a random position
-    let mut rng = fastrand::Rng::new();
-    let (x, y) = valid_positions[rng.usize(0..valid_positions.len())];
-
-    let player_position = Position::new(x, y);
+    // Spawn the player
     let player_id = spawn_ascii_entity(
         &mut commands,
         &asset_server,
-        Some(Position::new(x, y)),
+        Some(player_position),
         Renderable {
             glyph: '@',
             color: Color::srgb(1.0, 1.0, 0.0), // #ffff00
@@ -46,9 +40,8 @@ pub fn spawn_player(
 
     commands.entity(player_id).insert((PlayerTag, TurnActor::new(100), ViewShed { radius: 8 }));
 
-    // Spawn an enemy
-    let (x, y) = valid_positions[rng.usize(0..valid_positions.len())];
-    let actor_position = Position::new(x, y);
+    // Spawn an enemy at a random location
+    let actor_position = find_valid_position(&current_map, &terrain_query);
     let actor_id = spawn_ascii_entity(
         &mut commands,
         &asset_server,
@@ -70,4 +63,29 @@ pub fn spawn_player(
     let current_time = turn_system.current_time();
     turn_system.schedule_turn(player_id, current_time);
     turn_system.schedule_turn(actor_id, current_time);
+}
+
+// Helper function to find a valid floor position
+fn find_valid_position(current_map: &CurrentMap, terrain_query: &Query<&TerrainType>) -> Position {
+    let mut rng = fastrand::Rng::new();
+    let mut valid_positions = Vec::new();
+
+    for y in 1..ModelConstants::MAP_HEIGHT - 1 {
+        for x in 1..ModelConstants::MAP_WIDTH - 1 {
+            if let Some(terrain_entity) = current_map.get_terrain(Position::new(x as i32, y as i32)) {
+                if let Ok(terrain_type) = terrain_query.get(terrain_entity) {
+                    if *terrain_type == TerrainType::Floor {
+                        valid_positions.push(Position::new(x as i32, y as i32));
+                    }
+                }
+            }
+        }
+    }
+
+    if valid_positions.is_empty() {
+        // If no valid positions found, return a default position
+        Position::new(ModelConstants::MAP_WIDTH as i32 / 2, ModelConstants::MAP_HEIGHT as i32 / 2)
+    } else {
+        valid_positions[rng.usize(0..valid_positions.len())]
+    }
 }

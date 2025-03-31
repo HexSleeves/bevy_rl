@@ -17,7 +17,7 @@ pub struct TurnQueue {
 
 impl TurnQueue {
     pub fn print_queue(&self) {
-        log::info!("Turn queue: {:?}", self.turn_queue);
+        log::info!("Current time: {:?}, Turn queue: {:?}", self.current_time, self.turn_queue);
     }
 
     // Add actor to the queue with wrapping time calculation

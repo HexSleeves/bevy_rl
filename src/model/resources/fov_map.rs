@@ -143,7 +143,7 @@ impl FovMap {
             let pos = self.transform_octant(origin, row, col, octant);
 
             // Skip if out of bounds
-            if !map.is_in_bounds(pos) {
+            if !map.in_bounds(pos) {
                 continue;
             }
 

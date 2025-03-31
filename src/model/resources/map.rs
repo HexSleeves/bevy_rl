@@ -48,6 +48,14 @@ impl Map {
         Self { size, terrain, actors: HashMap::new() }
     }
 
+    pub fn pos_to_idx(&self, position: Position) -> usize {
+        self.terrain.position_to_index_unchecked(position.into())
+    }
+
+    pub fn idx_to_pos(&self, idx: usize) -> Option<(i32, i32)> {
+        self.terrain.index_to_position(idx)
+    }
+
     pub fn get_terrain(&self, position: Position) -> Option<Entity> {
         self.terrain.get(position.into()).copied()
     }
@@ -65,7 +73,7 @@ impl Map {
     }
 
     // Helper method to check if a position is in bounds
-    pub fn is_in_bounds(&self, position: Position) -> bool {
+    pub fn in_bounds(&self, position: Position) -> bool {
         let (x, y) = position.into();
         x >= 0 && y >= 0 && x < self.size.0 as i32 && y < self.size.1 as i32
     }
