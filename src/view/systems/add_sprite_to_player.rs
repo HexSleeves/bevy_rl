@@ -1,28 +1,30 @@
 use bevy::prelude::*;
 
 use crate::{
-    model::components::TerrainType,
+    model::components::PlayerTag,
     view::{components::TileSprite, resources::TileMap},
 };
 
-/// System that adds sprite components to tiles based on their terrain type
-pub fn add_sprite_to_tile(
+/// System that adds sprite components to the player entity
+pub fn add_sprite_to_player(
     mut commands: Commands,
-    q_tiles: Query<(Entity, &TerrainType), (Added<TerrainType>, Without<Sprite>)>,
     tilemap: Option<Res<TileMap>>,
+    q_player: Option<Single<Entity, (With<PlayerTag>, Without<Sprite>)>>,
 ) {
     // If the tilemap resource isn't available yet, we can't add sprites
     let Some(tilemap) = tilemap else {
         return;
     };
 
-    for (entity, tile_type) in q_tiles.iter() {
-        // Get the sprite coordinates for this terrain type
-        let tile_coords = tilemap.get_sprite_index_for_terrain(tile_type);
-        let index = tilemap.coords_to_index(tile_coords);
+    if let Some(player) = q_player {
+        let entity = player.into_inner();
+
+        // Get player sprite coordinates from the tilemap
+        let player_coords = tilemap.get_player_sprite_coords();
+        let index = tilemap.coords_to_index(player_coords);
 
         // Create a TileSprite component
-        let tile_sprite = TileSprite::new(tile_coords, tilemap.tile_size);
+        let tile_sprite = TileSprite::new(player_coords, tilemap.tile_size);
 
         // Generate the sprite using our helper method
         let sprite = tilemap.generate_sprite_for_terrain(index);

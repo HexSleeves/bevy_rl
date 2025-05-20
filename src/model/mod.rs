@@ -5,7 +5,6 @@ pub mod generation;
 pub mod resources;
 pub mod systems;
 pub mod types;
-pub mod utils;
 
 mod model_constants;
 pub use self::model_constants::*;

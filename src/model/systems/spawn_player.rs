@@ -3,14 +3,12 @@ use bevy::prelude::*;
 use crate::model::{
     components::{AITag, PlayerTag, Position, Renderable, TerrainType, TurnActor, ViewShed},
     resources::{CurrentMap, SpawnPoint, TurnQueue},
-    utils::spawn_ascii_entity,
     ModelConstants,
 };
 
 pub fn spawn_player(
     mut commands: Commands,
     mut current_map: ResMut<CurrentMap>,
-    asset_server: Res<AssetServer>,
     mut turn_system: ResMut<TurnQueue>,
     terrain_query: Query<&TerrainType>,
     spawn_point: Option<Res<SpawnPoint>>,
@@ -27,33 +25,32 @@ pub fn spawn_player(
     };
 
     // Spawn the player
-    let player_id = spawn_ascii_entity(
-        &mut commands,
-        &asset_server,
-        Some(player_position),
-        Renderable {
-            glyph: '@',
-            color: Color::srgb(1.0, 1.0, 0.0), // #ffff00
-        },
-        1.0,
-    );
-
-    commands.entity(player_id).insert((PlayerTag, TurnActor::new(100), ViewShed { radius: 8 }));
+    let player_id = commands
+        .spawn((
+            player_position,
+            Renderable {
+                glyph: '@',
+                color: Color::srgb(1.0, 1.0, 0.0), // #ffff00
+            },
+            PlayerTag,
+            TurnActor::new(100),
+            ViewShed { radius: 8 },
+        ))
+        .id();
 
     // Spawn an enemy at a random location
     let actor_position = find_valid_position(&current_map, &terrain_query);
-    let actor_id = spawn_ascii_entity(
-        &mut commands,
-        &asset_server,
-        Some(actor_position),
-        Renderable {
-            glyph: 'E',
-            color: Color::srgb(1.0, 0.0, 0.0), // #ff0000
-        },
-        1.0,
-    );
-
-    commands.entity(actor_id).insert((AITag, TurnActor::new(120)));
+    let actor_id = commands
+        .spawn((
+            actor_position,
+            Renderable {
+                glyph: 'E',
+                color: Color::srgb(1.0, 0.0, 0.0), // #ff0000
+            },
+            AITag,
+            TurnActor::new(120),
+        ))
+        .id();
 
     // Set the player and actor on the map
     current_map.set_actor(player_position, Some(player_id));
