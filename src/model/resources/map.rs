@@ -1,4 +1,4 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{platform::collections::HashMap, prelude::*};
 use brtk::prelude::*;
 
 use crate::model::{
@@ -52,17 +52,17 @@ impl Map {
         self.terrain.position_to_index_unchecked(position.into())
     }
 
-    pub fn idx_to_pos(&self, idx: usize) -> Option<(i32, i32)> {
-        self.terrain.index_to_position(idx)
-    }
+    pub fn idx_to_pos(&self, idx: usize) -> Option<(i32, i32)> { self.terrain.index_to_position(idx) }
 
     pub fn get_terrain(&self, position: Position) -> Option<Entity> {
         self.terrain.get(position.into()).copied()
     }
 
-    pub fn get_actor(&self, position: Position) -> Option<Entity> {
-        self.actors.get(&position).copied()
+    pub fn get_mut_terrain(&mut self, position: Position) -> Option<&mut Entity> {
+        self.terrain.get_mut(position.into())
     }
+
+    pub fn get_actor(&self, position: Position) -> Option<Entity> { self.actors.get(&position).copied() }
 
     pub fn set_actor(&mut self, position: Position, actor: Option<Entity>) {
         if let Some(actor) = actor {

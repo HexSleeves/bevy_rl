@@ -66,7 +66,7 @@ impl TileMap {
     pub fn get_player_sprite_coords(&self) -> (u32, u32) {
         // This should be the coordinates of a player sprite in your tilemap
         // Adjust these values to match your specific tilemap
-        (0, 3)
+        (0, 4)
     }
 
     /// Generate a sprite for a terrain type using its index in the texture atlas

@@ -8,7 +8,7 @@ impl Plugin for ViewPlugin {
         app.register_type::<crate::view::components::TileSprite>();
 
         // Initialize the tilemap during startup
-        app.add_systems(Startup, init_tilemap);
-        app.add_systems(PostUpdate, ((add_sprite_to_player, add_sprite_to_tile), position_to_transform));
+        app.add_systems(Startup, init_tilemap)
+            .add_systems(PostUpdate, ((add_sprite_to_player, add_sprite_to_tile), position_to_transform));
     }
 }

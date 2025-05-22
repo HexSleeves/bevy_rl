@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::view::{resources::TileMap, ViewConstants};
 
-const TILEMAP_PATH: &str = "tilemap.png";
+const TILEMAP_PATH: &str = "terminal_32x32.png";
 const TILEMAP_COLUMNS: usize = 16;
 const TILEMAP_ROWS: usize = 16;
 

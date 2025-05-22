@@ -8,9 +8,7 @@ use crate::model::{
 
 use super::resources::TurnQueue;
 
-pub fn is_player_turn(query: Query<&AwaitingInput>) -> bool {
-    query.get_single().is_ok()
-}
+pub fn is_player_turn(query: Query<&AwaitingInput>) -> bool { query.single().is_ok() }
 
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
 pub enum GameState {
@@ -40,7 +38,8 @@ impl Plugin for ModelPlugin {
         app.init_resource::<FovMap>();
         app.init_resource::<SpawnPoint>();
 
-        app.add_systems(Startup, (spawn_map, spawn_player, compute_fov, process_turns).chain());
+        app.add_systems(Startup, (spawn_player, compute_fov, process_turns).chain());
+        // app.add_systems(Startup, (spawn_map, spawn_player, compute_fov, process_turns).chain());
 
         app.add_systems(Update, process_turns.run_if(in_state(GameState::ProcessTurns)));
         app.add_systems(Update, monsters_turn.run_if(in_state(GameState::MonstersTurn)));

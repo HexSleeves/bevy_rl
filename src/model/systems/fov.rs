@@ -12,7 +12,7 @@ pub fn compute_fov(
     q_terrain: Query<&TerrainType>,
     query: Query<(&Position, &ViewShed), With<PlayerTag>>,
 ) {
-    if let Ok((player_pos, view_shed)) = query.get_single() {
+    if let Ok((player_pos, view_shed)) = query.single() {
         log::info!("Computing FOV for player at {:?}", player_pos);
         fov_map.compute_fov(&q_terrain, &map, *player_pos, view_shed.radius);
     }

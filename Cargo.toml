@@ -1,5 +1,5 @@
 [package]
-name = "bevy_github_ci_template"
+name    = "bevy_github_ci_template"
 version = "0.1.0"
 edition = "2021"
 publish = false
@@ -15,25 +15,25 @@ opt-level = 1
 # This is used by trunk as it doesn't support custom profiles: https://github.com/trunk-rs/trunk/issues/605
 # xbuild also uses this profile for building android AABs because I couldn't find a configuration for it
 [profile.release]
-opt-level = "s"
-lto = true
+opt-level     = "s"
+lto           = true
 codegen-units = 1
-strip = true
+strip         = true
 
 # Profile for distribution
 [profile.dist]
-inherits = "release"
-opt-level = 3
-lto = true
+inherits      = "release"
+opt-level     = 3
+lto           = true
 codegen-units = 1
-strip = true
+strip         = true
 
 [features]
 dev = ["bevy/dynamic_linking"]
 
 [dependencies]
 brtk = { path = "./brtk" }
-bevy = { version = "0.15", default-features = false, features = [
+bevy = { version = "0.16", default-features = false, features = [
   "animation",
   "bevy_asset",
   "bevy_color",
@@ -79,7 +79,7 @@ bitvec = { version = "1" }
 # Random number generator
 # rand = { version = "0.9" }
 # Error handling
-anyhow = { version = "1" }
+anyhow    = { version = "1" }
 thiserror = { version = "2" }
 
 # keep the following in sync with Bevy's dependencies
@@ -101,4 +101,4 @@ embed-resource = "1"
 # Feel free to delete the following lines.
 [lints.clippy]
 too_many_arguments = "allow"
-type_complexity = "allow"
+type_complexity    = "allow"

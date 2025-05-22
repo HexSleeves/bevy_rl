@@ -9,3 +9,6 @@ pub use self::init_tilemap::*;
 
 mod position_to_transform;
 pub use self::position_to_transform::*;
+
+// mod sprite_visibility;
+// pub use self::sprite_visibility::*;
